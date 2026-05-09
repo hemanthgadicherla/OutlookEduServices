@@ -54,6 +54,16 @@ CREATE TABLE blogs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Leads table for popup form submissions
+CREATE TABLE leads (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  phone VARCHAR(15) NOT NULL,
+  subject VARCHAR(100) NOT NULL,
+  message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Insert sample courses
 INSERT INTO courses (title, description, duration, price, image) VALUES
 ('Digital Marketing Mastery', 'Complete course covering SEO, social media, paid ads, and analytics.', '3 months', 25000, 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3'),

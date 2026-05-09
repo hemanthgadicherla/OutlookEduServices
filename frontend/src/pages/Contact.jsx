@@ -3,18 +3,39 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
+import { supabase } from "../services/supabase";
 
 const Contact = () => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
   const onSubmit = async (data) => {
-    try {
-      // In real app, send to backend API
-      console.log('Contact form data:', data);
-      toast.success('Message sent successfully! We\'ll get back to you soon.');
-      reset();
+  try {
+    const payload = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      subject: data.subject,
+      message: data.message,
+    };
+
+    console.log("Submitting Contact Form:", payload);
+
+    const { error } = await supabase
+      .from("contact_messages")
+      .insert([payload]);
+
+    if (error) {
+      console.error("Supabase Error:", error);
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("Message sent successfully!");
+    reset();
+
     } catch (error) {
-      toast.error('Failed to send message. Please try again.');
+      console.error("Unexpected Error:", error);
+      toast.error("Failed to send message.");
     }
   };
 
@@ -234,7 +255,7 @@ const Contact = () => {
           <div className="card border-0 shadow-lg">
             <div className="card-body p-0">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.2412648713906!2d-73.98784868459375!3d40.74844097932847!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c259a9b311746e7%3A0xd134e199a405a163!2sEmpire%20State%20Building!5e0!3m2!1sen!2sus!4v1643123456789!5m2!1sen!2sus"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d60932.247006029866!2d78.44358199452678!3d17.35095583587202!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb99c54aba72ff%3A0x98459efd5767c1c8!2sOutlook%20Educational%20Services%20Private%20Limited!5e0!3m2!1sen!2sin!4v1778262012321!5m2!1sen!2sin"
                 width="100%"
                 height="400"
                 style={{ border: 0 }}

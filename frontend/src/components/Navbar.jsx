@@ -46,7 +46,7 @@ const Navbar = () => {
             src="https://res.cloudinary.com/du1lrb3ng/image/upload/v1777891872/Outlook_logo_lux4gu.png"
             alt="Outlook Edu Services"
             style={{
-              height: '60px',
+              height: '50px',
               width: 'auto',
               objectFit: 'contain',
             }}

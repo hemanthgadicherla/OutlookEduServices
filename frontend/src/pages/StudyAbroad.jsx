@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { FaMapMarkerAlt, FaUniversity, FaGraduationCap, FaPlane } from 'react-icons/fa';
+import { studyAbroadCountries } from '../data/studyAbroad';
 
 const StudyAbroad = () => {
   const fadeInUp = {
@@ -10,62 +11,7 @@ const StudyAbroad = () => {
     transition: { duration: 0.6 }
   };
 
-  const countries = [
-    {
-      name: 'USA',
-      flag: '🇺🇸',
-      description: 'World-renowned universities with diverse programs and research opportunities.',
-      universities: '4000+',
-      popularCourses: 'Engineering, Business, Computer Science',
-      avgCost: '$30,000-50,000/year',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3'
-    },
-    {
-      name: 'UK',
-      flag: '🇬🇧',
-      description: 'Historic institutions with shorter course durations and global recognition.',
-      universities: '160+',
-      popularCourses: 'Business, Arts, Engineering',
-      avgCost: '£15,000-25,000/year',
-      image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?ixlib=rb-4.0.3'
-    },
-    {
-      name: 'Canada',
-      flag: '🇨🇦',
-      description: 'Affordable education with post-study work opportunities and immigration pathways.',
-      universities: '100+',
-      popularCourses: 'Engineering, Healthcare, Business',
-      avgCost: 'CAD $20,000-35,000/year',
-      image: 'https://images.unsplash.com/photo-1517935706615-2717063c2225?ixlib=rb-4.0.3'
-    },
-    {
-      name: 'Australia',
-      flag: '🇦🇺',
-      description: 'High-quality education with excellent research facilities and work opportunities.',
-      universities: '40+',
-      popularCourses: 'Engineering, Medicine, Business',
-      avgCost: 'AUD $25,000-40,000/year',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3'
-    },
-    {
-      name: 'Germany',
-      flag: '🇩🇪',
-      description: 'Tuition-free or low-cost education with strong engineering and technical programs.',
-      universities: '400+',
-      popularCourses: 'Engineering, Sciences, Business',
-      avgCost: '€0-500/semester',
-      image: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?ixlib=rb-4.0.3'
-    },
-    {
-      name: 'Netherlands',
-      flag: '🇳🇱',
-      description: 'Internationally-oriented programs taught in English with innovative teaching methods.',
-      universities: '60+',
-      popularCourses: 'Business, Engineering, Social Sciences',
-      avgCost: '€8,000-20,000/year',
-      image: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3'
-    }
-  ];
+  const countries = studyAbroadCountries;
 
   const process = [
     {
@@ -97,18 +43,18 @@ const StudyAbroad = () => {
   return (
     <div className="study-abroad-page">
       {/* Hero Section */}
-      <section className="hero-section bg-primary text-white py-5">
+      <section className="hero-section text-white py-5">
         <div className="container">
           <motion.div
             className="text-center"
             {...fadeInUp}
           >
             <h1 className="display-4 fw-bold mb-4">Study Abroad Destinations</h1>
-            <p className="lead mb-4">
+            <p className="lead text-black mb-4">
               Discover world-class education opportunities in top destinations worldwide.
               Your journey to international excellence starts here.
             </p>
-            <Link to="/contact" className="btn btn-light btn-lg">
+            <Link to="/contact" className="btn btn-dark btn-lg">
               Get Free Consultation
             </Link>
           </motion.div>
@@ -171,7 +117,7 @@ const StudyAbroad = () => {
 
                         <div className="mt-auto">
                           <Link
-                            to={`/country?name=${country.name.toLowerCase()}`}
+                            to={`/study-abroad/${country.slug}`}
                             className="btn btn-primary"
                           >
                             Learn More

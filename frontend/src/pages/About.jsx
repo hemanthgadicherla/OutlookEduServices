@@ -17,21 +17,21 @@ const About = () => {
 
   const team = [
     {
-      name: 'Dr. Sarah Johnson',
+      name: 'Khaja Nadeemuddin',
       role: 'Founder & CEO',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3',
+      image: 'https://res.cloudinary.com/du1lrb3ng/image/upload/v1778246829/Nadeem_pb3abd.jpg',
       bio: 'PhD in Education with 15+ years in international admissions.'
     },
     {
-      name: 'Michael Chen',
+      name: 'Jeelani',
       role: 'Head of Visa Services',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3',
+      image: 'https://res.cloudinary.com/du1lrb3ng/image/upload/v1778246935/Jeelani_jhjvqf.jpg',
       bio: 'Former immigration officer with expertise in global visa processes.'
     },
     {
-      name: 'Priya Sharma',
-      role: 'Academic Counselor',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3',
+      name: 'Noman',
+      role: 'Consultant & Career Advisor',
+      image: 'https://res.cloudinary.com/du1lrb3ng/image/upload/v1778246886/Noman_txa66z.jpg',
       bio: 'Masters from Oxford University, specializes in career guidance.'
     }
   ];
@@ -39,15 +39,17 @@ const About = () => {
   return (
     <div className="about-page">
       {/* Hero Section */}
-      <section className="hero-section bg-primary text-white py-5">
+      <section className="hero-section text-white py-5">
         <div className="container">
           <motion.div
             className="text-center"
             {...fadeInUp}
           >
             <h1 className="display-4 fw-bold mb-4">About EduConsult</h1>
-            <p className="lead mb-0">
-              Empowering dreams through education since 2009. Your trusted partner for global education opportunities.
+            <p className="lead text-black mb-0">
+              Outlook Edu Services is your reliable partner in securing visas for the United States and other countries, helping you achieve your international education and career goals.
+              At Outlook Edu Services, we understand that pursuing education or work abroad is a significant step, filled with both opportunities and challenges
+              We specialize in guiding clients through the complex visa application process, ensuring all requirements are met for a successful outcome.
             </p>
           </motion.div>
         </div>

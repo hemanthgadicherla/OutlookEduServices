@@ -50,8 +50,9 @@ const VisitVisa = () => {
     { name: 'UK', flag: '🇬🇧', processingTime: '3-5 weeks', successRate: '92%' },
     { name: 'Canada', flag: '🇨🇦', processingTime: '2-6 weeks', successRate: '94%' },
     { name: 'Australia', flag: '🇦🇺', processingTime: '4-8 weeks', successRate: '91%' },
-    { name: 'Germany', flag: '🇩🇪', processingTime: '2-4 weeks', successRate: '96%' },
-    { name: 'Singapore', flag: '🇸🇬', processingTime: '1-2 weeks', successRate: '98%' }
+    { name: 'New Zealand', flag: '🇳🇿', processingTime: '2-4 weeks', successRate: '96%' },
+    { name: 'Ireland', flag: '🇮🇪', processingTime: '1-2 weeks', successRate: '98%' },
+    { name: 'Europe', flag: '🇪🇺', processingTime: '1-2 weeks', successRate: '93%' }
   ];
 
   const process = [
@@ -66,18 +67,18 @@ const VisitVisa = () => {
   return (
     <div className="visit-visa-page">
       {/* Hero Section */}
-      <section className="hero-section bg-primary text-white py-5">
+      <section className="hero-section text-white py-5">
         <div className="container">
           <motion.div
             className="text-center"
             {...fadeInUp}
           >
             <h1 className="display-4 fw-bold mb-4">Visa Services</h1>
-            <p className="lead mb-4">
+            <p className="lead text-black mb-4">
               Expert visa assistance for all your international travel needs.
               From tourist visas to work permits, we've got you covered.
             </p>
-            <Link to="/contact" className="btn btn-light btn-lg">
+            <Link to="/contact" className="btn btn-dark btn-lg">
               Get Visa Consultation
             </Link>
           </motion.div>
