@@ -5,7 +5,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Autoplay} from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
-import { FaGraduationCap, FaPassport, FaBookOpen, FaUsers, FaHandshake, FaPlaneDeparture, FaMoneyCheckAlt, FaUserGraduate, FaWpforms, } from "react-icons/fa";
+import { FaGraduationCap, FaPassport, FaBookOpen, FaUsers, FaHandshake, FaPlaneDeparture, FaMoneyCheckAlt, FaUserGraduate, FaWpforms, FaUniversity, FaMedal, } from "react-icons/fa";
 
 const About = () => {
   const fadeInUp = {
@@ -15,10 +15,10 @@ const About = () => {
   };
 
   const stats = [
-    { number: '5000+', label: 'Students Guided' },
-    { number: '50+', label: 'Partner Universities' },
-    { number: '98%', label: 'Visa Success Rate' },
-    { number: '15+', label: 'Years Experience' }
+    { number: '5000+', label: 'Students Guided', icon: <FaUserGraduate /> },
+    { number: '50+', label: 'Partner Universities', icon: <FaGraduationCap /> },
+    { number: '98%', label: 'Visa Success Rate', icon: <FaPassport /> },
+    { number: '15+', label: 'Years Experience', icon: <FaMedal /> }
   ];
 
   const team = [
@@ -1157,9 +1157,9 @@ const About = () => {
 
                       style={{
 
-                        width: "90px",
+                        width: "100px",
 
-                        height: "90px",
+                        height: "100px",
 
                         borderRadius: "50%",
 
@@ -1168,9 +1168,7 @@ const About = () => {
 
                         color: "#111",
 
-                        fontSize: "32px",
-
-                        fontWeight: "700",
+                        fontSize: "42px",
 
                         boxShadow:
                           "0 10px 25px rgba(255,193,7,0.35)",
@@ -1178,7 +1176,7 @@ const About = () => {
                       }}
                     >
 
-                      {index + 1}
+                      {stat.icon}
 
                     </motion.div>
 
