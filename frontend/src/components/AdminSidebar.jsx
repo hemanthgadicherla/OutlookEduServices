@@ -1,14 +1,23 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../services/supabase";
 
 const AdminSidebar = () => {
 
   const location = useLocation();
 
+  const navigate = useNavigate();
+
   const menuItems = [
     {
       name: "Dashboard",
       path: "/admin/dashboard",
+    },
+
+    {
+      name: "Registrations",
+      path: "/admin/registrations",
     },
 
     {
@@ -25,7 +34,18 @@ const AdminSidebar = () => {
       name: "Leads",
       path: "/admin/leads",
     },
+    {
+      name: "Subscribers",
+      path: "/admin/subscribers",
+    },
   ];
+
+  const handleLogout = async () => {
+
+  await supabase.auth.signOut();
+
+  navigate("/admin");
+  };
 
   return (
     <div
@@ -57,6 +77,10 @@ const AdminSidebar = () => {
 
         ))
       }
+
+      <button className="btn btn-danger w-100 mt-4" onClick={handleLogout}>
+        Logout
+      </button>
 
     </div>
   );

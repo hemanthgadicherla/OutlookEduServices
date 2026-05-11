@@ -27,12 +27,16 @@ import Blogs from './pages/Blogs';
 import Contact from './pages/Contact';
 import Login from "./pages/Login";
 import Registration from './pages/Registration';
+import BlogDetail from "./pages/BlogDetail";
+import CourseDetail from "./pages/CourseDetail";
 
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCourses from "./pages/AdminCourses";
 import AdminBlogs from "./pages/AdminBlogs";
 import AdminLeads from "./pages/AdminLeads";
+import AdminRegistrations from "./pages/AdminRegistrations";
+import AdminSubscribers from "./pages/AdminSubscribers";
 
 function App() {
 
@@ -40,13 +44,47 @@ function App() {
   const isAdminRoute =
   location.pathname.startsWith("/admin");
 
+  const hideLeadPopupPages = [
+
+  "/contact",
+
+  "/login",
+
+  "/registration",
+
+];
+
+  const hideFooterPages = [
+
+  "/login",
+
+  "/registration",
+
+];
+
+  const shouldHideLeadPopup =
+
+  isAdminRoute ||
+
+  hideLeadPopupPages.includes(
+    location.pathname
+  );
+
+  const shouldHideFooter =
+
+  isAdminRoute ||
+
+  hideFooterPages.includes(
+    location.pathname
+  );
+
   return (
     <>
       <ScrollToTop />
 
       <div className="App">
 
-        {!isAdminRoute && <LeadPopup />}
+        {!shouldHideLeadPopup && <LeadPopup />}
 
         {!isAdminRoute && <Navbar />}
 
@@ -59,6 +97,8 @@ function App() {
           <Route path="/about" element={<About />} />
 
           <Route path="/courses" element={<Courses />} />
+          
+          <Route path="/course/:id" element={<CourseDetail />} />
 
           <Route path="/study-abroad" element={<StudyAbroad />} />
 
@@ -71,13 +111,15 @@ function App() {
 
           <Route path="/blogs" element={<Blogs />} />
 
+          <Route path="/blog/:id" element={<BlogDetail />} />
+
           <Route path="/contact" element={<Contact />} />
 
           <Route path="/login" element={<Login />} />
 
           <Route path="/registration" element={<Registration />} />
 
-
+          
 
           {/* Admin Routes */}
 
@@ -119,9 +161,27 @@ function App() {
             }
           />
 
+          <Route
+            path="/admin/registrations"
+            element={
+              <AdminProtectedRoute>
+                <AdminRegistrations />
+              </AdminProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/subscribers"
+            element={
+              <AdminProtectedRoute>
+                <AdminSubscribers />
+              </AdminProtectedRoute>
+            }
+          />
+
         </Routes>
 
-        {!isAdminRoute && <Footer />}
+        {!shouldHideFooter && <Footer />}
 
         <ToastContainer />
 

@@ -8,7 +8,9 @@ const AdminBlogs = () => {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [fullContent, setFullContent] = useState("");
   const [image, setImage] = useState("");
+  const [imageFile, setImageFile] = useState(null);
   const [author, setAuthor] = useState("");
   const [date, setDate] = useState("");
   const [readTime, setReadTime] = useState("");
@@ -24,19 +26,62 @@ const AdminBlogs = () => {
 
   const fetchBlogs = async () => {
 
-    const { data, error } = await supabase
+  const { data, error } =
+    await supabase
       .from("blogs")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", {
+        ascending: false,
+      });
 
-    if (!error) {
-      setBlogs(data);
-    }
-  };
+  console.log("BLOG DATA:", data);
+
+  console.log("BLOG ERROR:", error);
+
+  if (error) {
+
+    console.log(error);
+
+    return;
+  }
+
+  setBlogs(data || []);
+};
 
   const handleSubmit = async (e) => {
 
     e.preventDefault();
+
+    let imageUrl = image;
+
+if (imageFile) {
+
+  const fileName =
+    `${Date.now()}-${imageFile.name}`;
+
+  const { error: uploadError } =
+    await supabase.storage
+      .from("course-images")
+      .upload(
+        fileName,
+        imageFile
+      );
+
+  if (uploadError) {
+
+    console.log(uploadError);
+
+    return;
+  }
+
+  const { data } =
+    supabase.storage
+      .from("course-images")
+      .getPublicUrl(fileName);
+
+  imageUrl =
+    data.publicUrl;
+}
 
     if (editingId) {
 
@@ -45,7 +90,8 @@ const AdminBlogs = () => {
         .update({
           title,
           content,
-          image,
+          full_content: fullContent,
+          image: imageUrl,
           author,
           date,
           readTime,
@@ -62,7 +108,8 @@ const AdminBlogs = () => {
             {
                 title,
                 content,
-                image,
+                full_content: fullContent,
+                image: imageUrl,
                 author,
                 date,
                 readTime,
@@ -86,6 +133,7 @@ const AdminBlogs = () => {
 
     setTitle(blog.title);
     setContent(blog.content);
+    setFullContent(blog.full_content);
     setImage(blog.image);
     setAuthor(blog.author);
     setDate(blog.date);
@@ -114,6 +162,7 @@ const AdminBlogs = () => {
 
     setTitle("");
     setContent("");
+    setFullContent("");
     setImage("");
     setAuthor("");
     setDate("");
@@ -161,15 +210,23 @@ const AdminBlogs = () => {
               required
             />
 
-            <input
-              type="text"
-              placeholder="Image URL"
+            <textarea
+              placeholder="Full Blog Content"
               className="form-control mb-3"
-              value={image}
+              rows="10"
+              value={fullContent}
               onChange={(e) =>
-                setImage(e.target.value)
+              setFullContent(e.target.value)
               }
               required
+            />
+
+            <input
+              type="file"
+              className="form-control mb-3"
+              onChange={(e) =>
+                setImageFile(e.target.files[0])
+              }
             />
 
             <input

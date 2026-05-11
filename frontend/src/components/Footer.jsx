@@ -4,7 +4,7 @@ import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaWhatsapp } from 'reac
 
 const Footer = () => {
   return (
-    <footer className="bg-dark text-light py-5 mt-5">
+    <footer className="bg-dark text-light py-5">
       <div className="container">
         <div className="row">
           <div className="col-lg-4 mb-4">

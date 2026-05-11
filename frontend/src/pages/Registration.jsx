@@ -5,6 +5,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { FaCreditCard, FaLock, FaCheckCircle } from 'react-icons/fa';
+import { supabase } from "../services/supabase";
 
 const Registration = () => {
   const [searchParams] = useSearchParams();
@@ -42,30 +43,54 @@ const Registration = () => {
         payment_status: 'pending'
       };
 
-      const response = await axios.post('/api/registrations', registrationData);
+      const { data: registration, error } =
+        await supabase
+        .from("registrations")
+        .insert([
+       {
+          name: data.full_name,
+          email: data.email,
+          phone: data.phone,
 
-      // Create Razorpay order
-      const orderResponse = await axios.post('/api/payments/create-order', {
-        amount: selectedCourse?.price || courses.find(c => c.title === data.selected_course)?.price || 10000,
-        registrationId: response.data.id
-      });
+          course_name:
+            selectedCourse?.title
+            || data.selected_course,
+
+          amount:
+            selectedCourse?.price
+            || 10000,
+
+          payment_status: "pending",
+        },
+      ])
+      .select()
+      .single();
+
+  if (error) {
+
+    console.log(error);
+
+    toast.error("Registration failed");
+
+  return;
+}
 
       // Initialize Razorpay
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: orderResponse.data.amount,
-        currency: orderResponse.data.currency,
+        amount: (selectedCourse?.price || 10000) * 100,
+        currency: "INR",
         name: 'EduConsult',
         description: `Payment for ${selectedCourse?.title || data.selected_course}`,
-        order_id: orderResponse.data.id,
         handler: async (response) => {
           // Verify payment
-          await axios.post('/api/payments/verify', {
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_signature: response.razorpay_signature,
-            registrationId: response.data.id
-          });
+          await supabase
+            .from("registrations")
+            .update({
+            payment_status: "completed",
+            payment_id: response.razorpay_payment_id,
+          })
+        .eq("id", registration.id);
 
           setPaymentSuccess(true);
           toast.success('Payment successful! Registration complete.');

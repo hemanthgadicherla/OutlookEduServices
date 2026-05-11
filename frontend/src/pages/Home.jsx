@@ -1,7 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FaGraduationCap, FaPassport, FaBookOpen, FaUsers } from 'react-icons/fa';
+// import { FaGraduationCap, FaPassport, FaBookOpen, FaUsers } from 'react-icons/fa';
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination, Autoplay} from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
+import { FaGraduationCap, FaPassport, FaBookOpen, FaUsers, FaHandshake, FaPlaneDeparture, FaMoneyCheckAlt, FaUserGraduate, FaWpforms, } from "react-icons/fa";
 
 const Home = () => {
   const fadeInUp = {
@@ -38,152 +43,1558 @@ const Home = () => {
   ];
 
   const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      text: 'EduConsult helped me secure admission to my dream university in Canada. Their guidance was invaluable.',
-      role: 'Masters in Business, Canada'
-    },
-    {
-      name: 'Rahul Sharma',
-      text: 'The visa process was made so simple with their expert assistance. Highly recommended!',
-      role: 'Engineering Student, Australia'
-    },
-    {
-      name: 'Maria Garcia',
-      text: 'Professional courses helped me transition to a better career. Thank you EduConsult!',
-      role: 'Digital Marketing Professional'
-    }
-  ];
+
+  {
+    name: "Sudha",
+
+    image:
+      "https://randomuser.me/api/portraits/women/44.jpg",
+
+    text:
+      "I truly appreciate the guidance and support provided throughout my admission process. Their team helped me secure admission in my dream university abroad.",
+
+    role:
+      "Masters Student, Canada",
+  },
+
+  {
+    name: "Rahul Sharma",
+
+    image:
+      "https://randomuser.me/api/portraits/men/32.jpg",
+
+    text:
+      "The visa process became smooth and stress-free because of their expert counseling and documentation support.",
+
+    role:
+      "Engineering Student, Australia",
+  },
+
+  {
+    name: "Anantha Kumari",
+
+    image:
+      "https://randomuser.me/api/portraits/women/68.jpg",
+
+    text:
+      "From university applications to visa approval, the entire process was handled professionally and efficiently.",
+
+    role:
+      "Agriculture B.Sc, India",
+  },
+
+  {
+    name: "Supriya",
+
+    image:
+      "https://randomuser.me/api/portraits/women/65.jpg",
+
+    text:
+      "Their counselors are friendly, knowledgeable, and highly supportive throughout the educational journey.",
+
+    role:
+      "Veterinary Student",
+  },
+
+];
 
   return (
     <div>
-      {/* Hero Section */}
-      <section className="hero-section text-white py-5">
-        <div className="container">
+      {/* Premium Hero Section */}
+      <section
+        className="position-relative overflow-hidden d-flex align-items-center"
+        style={{
+          minHeight: "100vh",
+          background: "#000",
+          marginTop: "-1px",
+        }}
+      >
+      {/* BACKGROUND VIDEO */}
+
+        <video
+
+          autoPlay
+
+          muted
+
+          loop
+
+          playsInline
+
+          className="position-absolute w-100 h-100"
+
+          style={{
+            objectFit: "cover",
+            top: 0,
+            left: 0,
+            zIndex: 1,
+            filter:
+              "blur(2px) brightness(0.35)",
+          }}
+        >
+        {/* TEMP VIDEO */}
+
+        <source
+          src="https://cdn.coverr.co/videos/coverr-students-working-together-1560085555468?download=1080p"
+          type="video/mp4"
+        />
+
+        </video>
+
+        {/* DARK OVERLAY */}
+
+        <div
+          className="position-absolute w-100 h-100"
+          style={{
+            background:
+              "linear-gradient(135deg,rgba(0,0,0,0.75),rgba(17,24,39,0.85))",
+            zIndex: 2,
+          }}
+        />
+        {/* GOLD GLOW */}
+        <div
+          style={{
+            position: "absolute",
+            width: "400px",
+            height: "400px",
+            background:
+              "rgba(255,193,7,0.15)",
+            borderRadius: "50%",
+            filter: "blur(120px)",
+            top: "-100px",
+            left: "-100px",
+            zIndex: 2,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            width: "300px",
+            height: "300px",
+            background:
+              "rgba(255,193,7,0.12)",
+            borderRadius: "50%",
+            filter: "blur(120px)",
+            bottom: "-100px",
+            right: "-100px",
+            zIndex: 2,
+          }}
+        />
+        {/* CONTENT */}
+        <div className="container position-relative" style={{ zIndex: 3 }}>
           <motion.div
-            className="row align-items-center"
-            {...fadeInUp}
+            className="row align-items-center g-5"
+            initial={{
+              opacity: 0,
+              y: 40,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+            }}
           >
-            <div className="col-lg-6">
-              <h1 className="display-4 fw-bold mb-4">
-                Your Gateway to <span className="text-info">Global Education</span>
+          {/* LEFT CONTENT */}
+          <div className="col-lg-6">
+            <motion.div
+              initial={{
+              opacity: 0,
+              x: -40,
+            }}
+             animate={{
+              opacity: 1,
+              x: 0,  
+            }}
+              transition={{
+              delay: 0.2,
+              duration: 0.8,
+            }}
+            >
+            {/* BADGE */}
+            <span
+            className="px-4 py-2 mb-4 d-inline-block"
+            style={{
+              borderRadius: "40px",
+              background: "rgba(255,193,7,0.12)",
+              color: "#ffc107",
+              border: "1px solid rgba(255,193,7,0.3)",
+              letterSpacing: "1px",
+              fontWeight: "600",
+              backdropFilter:
+              "blur(12px)",
+            }}
+            >
+            STUDY ABROAD CONSULTANCY
+            </span>
+            {/* HEADING */}
+              <h1
+                className="fw-bold text-white mb-4"
+                style={{
+                fontSize: "clamp(2.5rem,6vw,5rem)", lineHeight: "1.15",
+                }}
+              >
+              Your Gateway To
+                <span style={{ color: "#ffc107" }}>
+                {" "}Global Education
+                </span>
               </h1>
-              <p className="lead mb-4 text-dark">
-                Premium study abroad guidance and educational consultancy services.
-                Turn your dreams of international education into reality.
+              {/* DESCRIPTION */}
+              <p
+                className="mb-5"
+                style={{
+                  color: "rgba(255,255,255,0.75)",
+                    fontSize: "18px",
+                    lineHeight: "1.9",
+                    maxWidth: "650px",
+                  }}
+              >
+                Premium study abroad guidance and
+                educational consultancy services to
+                help students achieve international
+                academic success with confidence.
+
               </p>
-              <div className="d-flex gap-3">
-                <Link to="/contact" className="btn btn-secondary btn-lg">
+              {/* BUTTONS */}
+              <div className="d-flex flex-wrap gap-3">
+                <Link
+                  to="/contact"
+                  className="btn"
+                  style={{
+                    background: "#ffc107",
+                    color: "#111",
+                    padding:  "14px 32px",
+                    borderRadius: "16px",
+                    fontWeight: "700",
+                    border: "none",
+                    boxShadow: "0 10px 25px rgba(255,193,7,0.3)",
+                  }}
+                >
                   Get Free Consultation
                 </Link>
-                <Link to="/courses" className="btn btn-outline-dark btn-lg">
-                  Explore Courses
+                <Link
+                  to="/courses"
+                  className="btn"
+                  style={{
+                    background: "rgba(255,255,255,0.08)",
+                      color: "#fff",
+                      padding:  "14px 32px",
+                      borderRadius: "16px",
+                      fontWeight: "600",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      backdropFilter: "blur(12px)",
+                    }}
+                >
+                Explore Courses
                 </Link>
-              </div>
+                </div>
+                {/* STATS */}
+                <div className="d-flex flex-wrap gap-4 mt-5">
+                  {
+                    [
+                      {
+                        number: "250+",
+                        label: "Students",
+                      },
+
+                      {
+                        number: "15+",
+                        label: "Countries",
+                      },
+
+                      {
+                        number: "98%",
+                        label: "Visa Success",
+                      },
+                    ].map((item, index) => (
+                    <div key={index}>
+                      <h3
+                        className="fw-bold mb-1"
+                        style={{
+                        color: "#ffc107",
+                      }}
+                      >
+                      {item.number}
+                      </h3>
+                      <small
+                        style={{
+                        color: "rgba(255,255,255,0.7)",
+                      }}
+                      >
+                      {item.label}
+                      </small>
+                    </div>
+                    ))
+                  }
+                </div>
+              </motion.div>
             </div>
+            {/* RIGHT IMAGE */}
             <div className="col-lg-6">
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  x: 40,
+                }}
+                animate={{
+                  opacity: 1,
+                  x: 0,
+                }}
+                transition={{
+                  delay: 0.3,
+                  duration: 0.8,
+                }}
+                className="position-relative"
+              >
               <motion.img
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3"
+                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f"
                 alt="Students studying"
-                className="img-fluid rounded shadow"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
+                className="img-fluid"
+                whileHover={{
+                scale: 1.02,
+              }}
+              transition={{
+              duration: 0.4,
+              }}
+              style={{
+                borderRadius: "35px",
+                width: "100%",
+                objectFit: "cover",
+                border: "2px solid rgba(255,193,7,0.25)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
+              }}
               />
+              {/* FLOATING CARD */}
+              <motion.div
+                animate={{
+                  y: [0, -10, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                }}
+                className="position-absolute p-4"
+                style={{
+                  bottom: "20px",
+                  left: "-20px",
+                  borderRadius: "24px",
+                  background: "rgba(255,255,255,0.08)",
+                  backdropFilter: "blur(14px)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+                >
+                <h4
+                  className="fw-bold mb-1"
+                  style={{
+                    color: "#ffc107",
+                  }}
+                >
+                  98%
+                </h4>
+                  <small className="text-white">
+                    Visa Success Rate
+                  </small>
+                </motion.div>
+              </motion.div>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section className="py-5">
-        <div className="container">
-          <motion.div
-            className="text-center mb-5"
-            {...fadeInUp}
-          >
-            <h2 className="display-5 fw-bold">Our Services</h2>
-            <p className="lead text-muted">Comprehensive educational solutions for your future</p>
-          </motion.div>
 
-          <div className="row">
-            {services.map((service, index) => (
-              <motion.div
-                key={index}
-                className="col-lg-3 col-md-6 mb-4"
-                {...fadeInUp}
-                transition={{ delay: index * 0.1 }}
-              >
-                <div className="card h-100 border-0 shadow-sm hover-card">
-                  <div className="card-body text-center p-4">
-                    <div className="text-primary mb-3" style={{ fontSize: '3rem' }}>
-                      {service.icon}
+
+    {/* Premium Services Section */}
+
+    <section
+      className="py-5 position-relative overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(135deg,#050505,#111827)",
+      }}
+    >
+
+      {/* GOLD GLOW */}
+
+      <div
+        style={{
+          position: "absolute",
+          width: "400px",
+          height: "400px",
+          background:
+            "rgba(255,193,7,0.18)",
+          borderRadius: "50%",
+          filter: "blur(120px)",
+          top: "-100px",
+          left: "-100px",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          width: "300px",
+          height: "300px",
+          background:
+            "rgba(255,193,7,0.12)",
+          borderRadius: "50%",
+          filter: "blur(120px)",
+          bottom: "-100px",
+          right: "-100px",
+        }}
+      />
+
+      <div className="container position-relative">
+
+        {/* HEADING */}
+
+        <motion.div
+
+          className="text-center mb-5"
+
+          initial={{
+            opacity: 0,
+            y: 40,
+          }}
+
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+
+          transition={{
+            duration: 0.6,
+          }}
+
+          viewport={{
+            once: true,
+          }}
+        >
+
+          <span
+            className="px-4 py-2 mb-3 d-inline-block"
+            style={{
+              borderRadius: "40px",
+
+              background:
+                "rgba(255,193,7,0.12)",
+
+              color: "#ffc107",
+
+              border:
+                "1px solid rgba(255,193,7,0.3)",
+
+              letterSpacing: "1px",
+
+              fontWeight: "600",
+            }}
+          >
+            OUR SERVICES
+          </span>
+
+          <h2
+            className="fw-bold text-white"
+            style={{
+              fontSize: "clamp(2rem,5vw,3.5rem)",
+            }}
+          >
+
+            Complete Support For
+
+            <span style={{ color: "#ffc107" }}>
+              {" "}Your Global Journey
+            </span>
+
+          </h2>
+
+          <p
+            className="mx-auto mt-3"
+            style={{
+
+              maxWidth: "750px",
+
+              lineHeight: "1.9",
+
+              fontSize: "17px",
+
+              color:
+                "rgba(255,255,255,0.7)",
+
+            }}
+          >
+            From admissions and scholarships to visas
+            and documentation, we guide students
+            through every step of their international
+            education journey.
+          </p>
+
+        </motion.div>
+
+        <div className="row align-items-center g-4">
+
+          {/* LEFT SERVICES */}
+
+          <div className="col-lg-3 col-md-6">
+
+            {
+
+              [
+
+                {
+                  icon: <FaGraduationCap />,
+                  title: 'Study Abroad',
+                  description:
+                    'Comprehensive guidance for international education opportunities.',
+                  link: '/study-abroad'
+                },
+
+                {
+                  icon: <FaPassport />,
+                  title: 'Visa Services',
+                  description:
+                    'Expert assistance with visa applications and documentation.',
+                  link: '/visit-visa'
+                },
+
+              ].map((item, index) => (
+
+                <motion.div
+
+                  key={index}
+
+                  className="mb-4 p-4 h-100"
+
+                  initial={{
+                    opacity: 0,
+                    x: -40,
+                  }}
+
+                  whileInView={{
+                    opacity: 1,
+                    x: 0,
+                  }}
+
+                  transition={{
+                    delay: index * 0.2,
+                  }}
+
+                  whileHover={{
+                    y: -10,
+                    scale: 1.02,
+                  }}
+
+                  viewport={{
+                    once: true,
+                  }}
+
+                  style={{
+
+                    background:
+                      "rgba(255,255,255,0.06)",
+
+                    backdropFilter:
+                      "blur(14px)",
+
+                    borderRadius: "28px",
+
+                    border:
+                      "1px solid rgba(255,255,255,0.08)",
+
+                    boxShadow:
+                      "0 10px 35px rgba(0,0,0,0.25)",
+
+                  }}
+                >
+
+                  <div
+                    className="d-flex flex-column align-items-start"
+                  >
+
+                    <div
+                      className="d-flex align-items-center justify-content-center mb-4"
+
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        borderRadius: "22px",
+
+                        background:
+                          "linear-gradient(135deg,#ffc107,#ffb300)",
+
+                        color: "#111",
+
+                        fontSize: "32px",
+
+                        boxShadow:
+                          "0 10px 25px rgba(255,193,7,0.35)",
+                      }}
+                    >
+                      {item.icon}
                     </div>
-                    <h5 className="card-title fw-bold">{service.title}</h5>
-                    <p className="card-text text-muted">{service.description}</p>
-                    <Link to={service.link} className="btn btn-primary">
+
+                    <h4
+                      className="fw-bold mb-3 text-white"
+                      style={{
+                        fontSize: "22px",
+                      }}
+                    >
+                      {item.title}
+                    </h4>
+
+                    <p
+                      style={{
+
+                        lineHeight: "1.8",
+
+                        fontSize: "15px",
+
+                        color:
+                          "rgba(255,255,255,0.7)",
+
+                      }}
+                    >
+                      {item.description}
+                    </p>
+
+                    <Link
+
+                      to={item.link}
+
+                      className="btn mt-3"
+
+                      style={{
+
+                        background:
+                          "#ffc107",
+
+                        color: "#111",
+
+                        borderRadius: "14px",
+
+                        padding:
+                          "10px 24px",
+
+                        fontWeight: "700",
+
+                        border: "none",
+
+                      }}
+                    >
+
                       Learn More
+
                     </Link>
+
                   </div>
-                </div>
-              </motion.div>
-            ))}
+
+                </motion.div>
+
+              ))
+            }
+
           </div>
-        </div>
-      </section>
 
-      {/* Testimonials Section */}
-      <section className="bg-light py-5">
-        <div className="container">
-          <motion.div
-            className="text-center mb-5"
-            {...fadeInUp}
-          >
-            <h2 className="display-5 fw-bold">What Our Students Say</h2>
-            <p className="lead text-muted">Success stories from our satisfied clients</p>
-          </motion.div>
+          {/* CENTER IMAGE */}
 
-          <div className="row">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                className="col-lg-4 mb-4"
-                {...fadeInUp}
-                transition={{ delay: index * 0.1 }}
+          <div className="col-lg-6 text-center position-relative">
+
+            <motion.img
+
+              src="https://images.unsplash.com/photo-1523240795612-9a054b0db644"
+
+              alt="Students"
+
+              className="img-fluid shadow-lg"
+
+              initial={{
+                opacity: 0,
+                scale: 0.9,
+              }}
+
+              whileInView={{
+                opacity: 1,
+                scale: 1,
+              }}
+
+              transition={{
+                duration: 0.8,
+              }}
+
+              whileHover={{
+                scale: 1.02,
+              }}
+
+              viewport={{
+                once: true,
+              }}
+
+              style={{
+                borderRadius: "35px",
+                maxHeight: "700px",
+                width: "100%",
+                objectFit: "cover",
+
+                border:
+                  "2px solid rgba(255,193,7,0.25)",
+              }}
+            />
+
+            {/* FLOATING BADGE */}
+
+            <motion.div
+
+              animate={{
+                y: [0, -10, 0],
+              }}
+
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+              }}
+
+              className="position-absolute p-3"
+
+              style={{
+
+                top: "8%",
+
+                left: "0",
+
+                borderRadius: "20px",
+
+                minWidth: "140px",
+
+                background:
+                  "rgba(255,255,255,0.08)",
+
+                backdropFilter:
+                  "blur(14px)",
+
+                border:
+                  "1px solid rgba(255,255,255,0.1)",
+
+              }}
+            >
+
+              <h5
+                className="fw-bold mb-1"
+                style={{
+                  color: "#ffc107"
+                }}
               >
-                <div className="card h-100 border-0 shadow-sm">
-                  <div className="card-body p-4">
-                    <p className="card-text mb-3">"{testimonial.text}"</p>
-                    <div className="d-flex align-items-center">
-                      <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                           style={{ width: '50px', height: '50px', fontSize: '1.2rem', fontWeight: 'bold' }}>
-                        {testimonial.name.charAt(0)}
-                      </div>
-                      <div>
-                        <h6 className="mb-0 fw-bold">{testimonial.name}</h6>
-                        <small className="text-muted">{testimonial.role}</small>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                250+
+              </h5>
+
+              <small className="text-white">
+                Students Guided
+              </small>
+
+            </motion.div>
+
           </div>
+
+          {/* RIGHT SERVICES */}
+
+          <div className="col-lg-3 col-md-6">
+
+            {
+
+              [
+
+                {
+                  icon: <FaBookOpen />,
+                  title: 'Courses',
+                  description:
+                    'Professional training programs for career advancement.',
+                  link: '/courses'
+                },
+
+                {
+                  icon: <FaUsers />,
+                  title: 'Consultation',
+                  description:
+                    'Personalized counseling for your educational journey.',
+                  link: '/contact'
+                }
+
+              ].map((item, index) => (
+
+                <motion.div
+
+                  key={index}
+
+                  className="mb-4 p-4 h-100"
+
+                  initial={{
+                    opacity: 0,
+                    x: 40,
+                  }}
+
+                  whileInView={{
+                    opacity: 1,
+                    x: 0,
+                  }}
+
+                  transition={{
+                    delay: index * 0.2,
+                  }}
+
+                  whileHover={{
+                    y: -10,
+                    scale: 1.02,
+                  }}
+
+                  viewport={{
+                    once: true,
+                  }}
+
+                  style={{
+
+                    background:
+                      "rgba(255,255,255,0.06)",
+
+                    backdropFilter:
+                      "blur(14px)",
+
+                    borderRadius: "28px",
+
+                    border:
+                      "1px solid rgba(255,255,255,0.08)",
+
+                    boxShadow:
+                      "0 10px 35px rgba(0,0,0,0.25)",
+
+                  }}
+                >
+
+                  <div
+                    className="d-flex flex-column align-items-start"
+                  >
+
+                    <div
+                      className="d-flex align-items-center justify-content-center mb-4"
+
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        borderRadius: "22px",
+
+                        background:
+                          "linear-gradient(135deg,#ffc107,#ffb300)",
+
+                        color: "#111",
+
+                        fontSize: "32px",
+
+                        boxShadow:
+                          "0 10px 25px rgba(255,193,7,0.35)",
+                      }}
+                    >
+                      {item.icon}
+                    </div>
+
+                    <h4
+                      className="fw-bold mb-3 text-white"
+                      style={{
+                        fontSize: "22px",
+                      }}
+                    >
+                      {item.title}
+                    </h4>
+
+                    <p
+                      style={{
+
+                        lineHeight: "1.8",
+
+                        fontSize: "15px",
+
+                        color:
+                          "rgba(255,255,255,0.7)",
+
+                      }}
+                    >
+                      {item.description}
+                    </p>
+
+                    <Link
+
+                      to={item.link}
+
+                      className="btn mt-3"
+
+                      style={{
+
+                        background:
+                          "#ffc107",
+
+                        color: "#111",
+
+                        borderRadius: "14px",
+
+                        padding:
+                          "10px 24px",
+
+                        fontWeight: "700",
+
+                        border: "none",
+
+                      }}
+                    >
+
+                      Learn More
+
+                    </Link>
+
+                  </div>
+
+                </motion.div>
+
+              ))
+            }
+
+          </div>
+
         </div>
+
+      </div>
+
+    </section>
+
+      {/* Premium Testimonials Section */}
+
+      <section
+        className="py-5 position-relative overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(135deg,#050505,#111827)",
+        }}
+      >
+
+        {/* GOLD GLOW */}
+
+        <div
+          style={{
+            position: "absolute",
+            width: "350px",
+            height: "350px",
+            background:
+              "rgba(255,193,7,0.12)",
+            borderRadius: "50%",
+            filter: "blur(120px)",
+            top: "-100px",
+            right: "-100px",
+          }}
+        />
+
+        <div className="container position-relative">
+
+          {/* HEADING */}
+
+          <motion.div
+
+            className="text-center mb-5"
+
+            initial={{
+              opacity: 0,
+              y: 40,
+            }}
+
+            whileInView={{
+              opacity: 1,
+              y: 0,
+            }}
+
+            transition={{
+              duration: 0.7,
+            }}
+
+            viewport={{
+              once: true,
+            }}
+          >
+
+            <span
+              className="px-4 py-2 mb-3 d-inline-block"
+              style={{
+                borderRadius: "40px",
+
+                background:
+                  "rgba(255,193,7,0.12)",
+
+                color: "#ffc107",
+
+                border:
+                  "1px solid rgba(255,193,7,0.3)",
+
+                letterSpacing: "1px",
+
+                fontWeight: "600",
+              }}
+            >
+              TESTIMONIALS
+            </span>
+
+            <h2
+              className="fw-bold text-white"
+              style={{
+                fontSize:
+                  "clamp(2rem,5vw,3.5rem)",
+              }}
+            >
+
+              What Our
+
+              <span style={{ color: "#ffc107" }}>
+                {" "}Students Say
+              </span>
+
+            </h2>
+
+            <p
+              className="mx-auto mt-3"
+              style={{
+
+                maxWidth: "700px",
+
+                color:
+                  "rgba(255,255,255,0.7)",
+
+                lineHeight: "1.9",
+
+                fontSize: "17px",
+
+              }}
+            >
+              Hear from students who successfully
+              achieved their international education
+              dreams with Outlook Edu Services.
+            </p>
+
+          </motion.div>
+
+          {/* TESTIMONIAL SLIDER */}
+
+          <Swiper
+
+            modules={[
+              Pagination,
+              Autoplay
+            ]}
+
+            spaceBetween={30}
+
+            slidesPerView={1}
+
+            autoplay={{
+              delay: 4000,
+            }}
+
+            pagination={{
+              clickable: true,
+            }}
+
+            breakpoints={{
+
+              768: {
+                slidesPerView: 2,
+              },
+
+              1200: {
+                slidesPerView: 3,
+              },
+
+            }}
+          >
+
+            {
+
+              testimonials.map(
+                (testimonial, index) => (
+
+                <SwiperSlide key={index}>
+
+                  <motion.div
+
+                    initial={{
+                      opacity: 0,
+                      y: 40,
+                    }}
+
+                    whileInView={{
+                      opacity: 1,
+                      y: 0,
+                    }}
+
+                    transition={{
+                      delay: index * 0.15,
+                    }}
+
+                    whileHover={{
+                      y: -10,
+                      scale: 1.02,
+                    }}
+
+                    viewport={{
+                      once: true,
+                    }}
+                  >
+
+                    <div
+
+                      className="h-100 p-4 position-relative"
+
+                      style={{
+
+                        background:
+                          "rgba(255,255,255,0.06)",
+
+                        backdropFilter:
+                          "blur(14px)",
+
+                        borderRadius: "30px",
+
+                        border:
+                          "1px solid rgba(255,255,255,0.08)",
+
+                        boxShadow:
+                          "0 10px 35px rgba(0,0,0,0.25)",
+
+                        overflow: "hidden",
+
+                      }}
+                    >
+
+                      {/* GOLD QUOTE */}
+
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "15px",
+                          right: "20px",
+
+                          fontSize: "70px",
+
+                          color:
+                            "rgba(255,193,7,0.15)",
+
+                          fontWeight: "bold",
+
+                          lineHeight: "1",
+                        }}
+                      >
+                        ”
+                      </div>
+
+                      {/* IMAGE */}
+
+                      <div className="text-center mb-4">
+
+                        <img
+
+                          src={testimonial.image}
+
+                          alt={testimonial.name}
+
+                          style={{
+
+                            width: "90px",
+
+                            height: "90px",
+
+                            objectFit: "cover",
+
+                            borderRadius: "50%",
+
+                            border:
+                              "4px solid #ffc107",
+
+                            boxShadow:
+                              "0 10px 25px rgba(255,193,7,0.25)",
+
+                          }}
+                        />
+
+                      </div>
+
+                      {/* TEXT */}
+
+                      <p
+                        style={{
+
+                          color:
+                            "rgba(255,255,255,0.75)",
+
+                          lineHeight: "1.9",
+
+                          fontSize: "15px",
+
+                          minHeight: "140px",
+
+                        }}
+                      >
+
+                        "{testimonial.text}"
+
+                      </p>
+
+                      {/* USER INFO */}
+
+                      <div className="text-center mt-4">
+
+                        <h5
+                          className="fw-bold mb-1 text-white"
+                        >
+                          {testimonial.name}
+                        </h5>
+
+                        <small
+                          style={{
+                            color: "#ffc107",
+                          }}
+                        >
+                          {testimonial.role}
+                        </small>
+
+                      </div>
+
+                    </div>
+
+                  </motion.div>
+
+                </SwiperSlide>
+
+              ))
+            }
+
+          </Swiper>
+
+        </div>
+
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-primary text-white py-5">
-        <div className="container text-center">
-          <motion.div {...fadeInUp}>
-            <h2 className="display-5 fw-bold mb-3">Ready to Start Your Journey?</h2>
-            <p className="lead mb-4">
-              Get personalized guidance for your international education goals.
+      {/* Premium CTA Section */}
+
+      <section
+        className="py-5 position-relative overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(135deg,#050505,#111827)",
+        }}
+      >
+
+        {/* GOLD GLOW */}
+
+        <div
+          style={{
+            position: "absolute",
+            width: "350px",
+            height: "350px",
+            background:
+              "rgba(255,193,7,0.15)",
+
+            borderRadius: "50%",
+
+            filter: "blur(120px)",
+
+            top: "-100px",
+
+            left: "-100px",
+          }}
+        />
+
+        <div
+          style={{
+            position: "absolute",
+            width: "300px",
+            height: "300px",
+            background:
+              "rgba(255,193,7,0.12)",
+
+            borderRadius: "50%",
+
+            filter: "blur(120px)",
+
+            bottom: "-100px",
+
+            right: "-100px",
+          }}
+        />
+
+        <div className="container position-relative">
+
+          <motion.div
+
+            initial={{
+              opacity: 0,
+              y: 40,
+            }}
+
+            whileInView={{
+              opacity: 1,
+              y: 0,
+            }}
+
+            transition={{
+              duration: 0.7,
+            }}
+
+            viewport={{
+              once: true,
+            }}
+
+            className="text-center mx-auto p-4 p-lg-5"
+            
+            style={{
+
+              maxWidth: "1000px",
+
+              background:
+                "rgba(255,255,255,0.06)",
+
+              backdropFilter:
+                "blur(14px)",
+
+              borderRadius: "35px",
+
+              border:
+                "1px solid rgba(255,255,255,0.08)",
+
+              boxShadow:
+                "0 20px 60px rgba(0,0,0,0.35)",
+
+            }}
+          >
+
+            {/* BADGE */}
+
+            <span
+              className="px-4 py-2 mb-4 d-inline-block"
+              style={{
+
+                borderRadius: "40px",
+
+                background:
+                  "rgba(255,193,7,0.12)",
+
+                color: "#ffc107",
+
+                border:
+                  "1px solid rgba(255,193,7,0.3)",
+
+                letterSpacing: "1px",
+
+                fontWeight: "600",
+
+              }}
+            >
+              FREE CONSULTATION
+            </span>
+
+            {/* HEADING */}
+
+            <h2
+              className="fw-bold text-white mb-4"
+              style={{
+                fontSize:
+                  "clamp(2rem,5vw,4rem)",
+
+                lineHeight: "1.2",
+              }}
+            >
+
+              Ready To Start
+
+              <span style={{ color: "#ffc107" }}>
+                {" "}Your Journey?
+              </span>
+
+            </h2>
+
+            {/* DESCRIPTION */}
+
+            <p
+              className="mx-auto mb-5"
+              style={{
+
+                maxWidth: "700px",
+
+                color:
+                  "rgba(255,255,255,0.75)",
+
+                fontSize: "18px",
+
+                lineHeight: "1.9",
+
+              }}
+            >
+              Get personalized guidance from our expert
+              consultants and take the first step toward
+              achieving your international education goals.
             </p>
-            <Link to="/contact" className="btn btn-light btn-lg">
-              Book Free Consultation
-            </Link>
+
+            {/* BUTTONS */}
+
+            <div
+              className="d-flex flex-wrap justify-content-center gap-3"
+            >
+
+              <Link
+
+                to="/contact"
+
+                className="btn"
+
+                style={{
+
+                  background:
+                    "#ffc107",
+
+                  color: "#111",
+
+                  padding:
+                    "14px 34px",
+
+                  borderRadius: "16px",
+
+                  fontWeight: "700",
+
+                  border: "none",
+
+                  boxShadow:
+                    "0 10px 25px rgba(255,193,7,0.3)",
+
+                }}
+              >
+
+                Book Free Consultation
+
+              </Link>
+
+              <Link
+
+                to="/study-abroad"
+
+                className="btn"
+
+                style={{
+
+                  background:
+                    "rgba(255,255,255,0.08)",
+
+                  color: "#fff",
+
+                  padding:
+                    "14px 34px",
+
+                  borderRadius: "16px",
+
+                  fontWeight: "600",
+
+                  border:
+                    "1px solid rgba(255,255,255,0.12)",
+
+                  backdropFilter:
+                    "blur(12px)",
+
+                }}
+              >
+
+                Explore Destinations
+
+              </Link>
+
+            </div>
+
+            {/* STATS */}
+
+            <div
+              className="row mt-5 g-4"
+            >
+
+              {
+
+                [
+
+                  {
+                    number: "250+",
+                    label: "Students Guided",
+                  },
+
+                  {
+                    number: "15+",
+                    label: "Countries",
+                  },
+
+                  {
+                    number: "98%",
+                    label: "Visa Success",
+                  },
+
+                ].map((item, index) => (
+
+                  <div
+                    key={index}
+                    className="col-md-4"
+                  >
+
+                    <motion.div
+
+                      whileHover={{
+                        y: -6,
+                      }}
+
+                      transition={{
+                        duration: 0.3,
+                      }}
+
+                      className="p-4"
+
+                      style={{
+
+                        background:
+                          "rgba(255,255,255,0.04)",
+
+                        borderRadius: "24px",
+
+                        border:
+                          "1px solid rgba(255,255,255,0.06)",
+
+                      }}
+                    >
+
+                      <h3
+                        className="fw-bold mb-2"
+                        style={{
+                          color: "#ffc107",
+                        }}
+                      >
+                        {item.number}
+                      </h3>
+
+                      <p
+                        className="mb-0"
+                        style={{
+                          color:
+                            "rgba(255,255,255,0.7)",
+                        }}
+                      >
+                        {item.label}
+                      </p>
+
+                    </motion.div>
+
+                  </div>
+
+                ))
+              }
+
+            </div>
+
           </motion.div>
+
         </div>
+
       </section>
     </div>
   );

@@ -90,12 +90,30 @@ const Contact = () => {
       <div className="container">
         {/* Header */}
         <motion.div
-          className="text-center mb-5"
+          className="text-center mb-5 py-5 px-4 rounded-4 shadow-lg"
           {...fadeInUp}
+          style={{
+            background: "linear-gradient(135deg, #111827, #1f2937)",
+            border: "1px solid rgba(255, 215, 0, 0.15)"
+          }}
         >
-          <h1 className="display-4 fw-bold mb-3">Contact Us</h1>
-          <p className="lead text-muted">
-            Get in touch with our experts for personalized guidance on your educational journey
+          <h1
+            className="display-4 fw-bold mb-4"
+            style={{ color: "#FFD700" }}
+          >
+            Contact Outlook Edu Services
+          </h1>
+
+          <p
+            className="lead mx-auto"
+            style={{
+              maxWidth: "750px",
+              color: "#d1d5db"
+            }}
+          >
+            Connect with our expert counselors for personalized guidance on
+            admissions, visas, scholarships, and global career opportunities.
+            Begin your international education journey with confidence.
           </p>
         </motion.div>
 
@@ -223,10 +241,25 @@ const Contact = () => {
 
         {/* FAQ Section */}
         <motion.div
-          className="mt-5"
+          className="mt-5 py-5"
           {...fadeInUp}
         >
-          <h2 className="text-center display-5 fw-bold mb-5">Frequently Asked Questions</h2>
+          <div className="text-center mb-5">
+            <h2
+              className="display-5 fw-bold mb-3"
+              style={{ color: "#FFD700" }}
+            >
+              Frequently Asked Questions
+            </h2>
+
+            <p
+              className="lead text-white mx-auto"
+              style={{ maxWidth: "700px" }}
+            >
+              Find answers to common questions about studying abroad,
+              admissions, visas, scholarships, and our consultancy services.
+            </p>
+          </div>
 
           <div className="row">
             {faqs.map((faq, index) => (
@@ -236,10 +269,27 @@ const Contact = () => {
                 {...fadeInUp}
                 transition={{ delay: index * 0.1 }}
               >
-                <div className="card border-0 shadow-sm h-100">
+                <div
+                  className="card border-0 shadow-lg h-100 rounded-4"
+                  style={{
+                    background: "linear-gradient(135deg, #111827, #1f2937)",
+                    border: "1px solid rgba(255, 215, 0, 0.15)"
+                  }}
+                >
                   <div className="card-body p-4">
-                    <h5 className="card-title fw-bold text-primary mb-3">{faq.question}</h5>
-                    <p className="card-text text-muted">{faq.answer}</p>
+                    <h5
+                      className="fw-bold mb-3"
+                      style={{ color: "#FFD700" }}
+                    >
+                      {faq.question}
+                    </h5>
+
+                    <p
+                      className="mb-0"
+                      style={{ color: "#d1d5db" }}
+                    >
+                      {faq.answer}
+                    </p>
                   </div>
                 </div>
               </motion.div>

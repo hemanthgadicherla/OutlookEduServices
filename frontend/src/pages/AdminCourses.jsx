@@ -8,9 +8,12 @@ const AdminCourses = () => {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [fullDescription, setFullDescription] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState("");
-
+  const [imageFile, setImageFile] = useState(null);
+  const [documentFile, setDocumentFile] = useState(null);
+  const [courseDocument, setCourseDocument] = useState("");
   const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
@@ -35,36 +38,108 @@ const AdminCourses = () => {
 
     e.preventDefault();
 
+    let imageUrl = image;
+
+    if (imageFile) {
+
+  const fileName =
+    `${Date.now()}-${imageFile.name}`;
+
+  const { error: uploadError } =
+    await supabase.storage
+      .from("course-images")
+      .upload(
+        fileName,
+        imageFile
+      );
+
+    if (uploadError) {
+
+      console.log(uploadError);
+
+    return;
+  }
+
+  const { data } =
+    supabase.storage
+      .from("course-images")
+      .getPublicUrl(fileName);
+
+    imageUrl = data.publicUrl;
+  }
+
+  let documentUrl = courseDocument;
+
+if (documentFile) {
+
+  const fileName =
+    `${Date.now()}-${documentFile.name}`;
+
+  const { error: uploadError } =
+    await supabase.storage
+      .from("course-documents")
+      .upload(
+        fileName,
+        documentFile
+      );
+
+  if (uploadError) {
+
+    console.log(uploadError);
+
+    return;
+  }
+
+  const { data } =
+    supabase.storage
+      .from("course-documents")
+      .getPublicUrl(fileName);
+
+  documentUrl =
+    data.publicUrl;
+}
+
     if (editingId) {
 
-      await supabase
-        .from("courses")
-        .update({
-          title,
-          description,
-          price,
-          image,
-        })
-        .eq("id", editingId);
-
-    } else {
-
-      const { data, error } =
-  await supabase
-    .from("courses")
-    .insert([
-      {
+  const { error } =
+    await supabase
+      .from("courses")
+      .update({
         title,
         description,
+        full_description:
+          fullDescription,
         price,
-        image,
-      },
-    ]);
+        image: imageUrl,
+        course_document:
+          documentUrl,
+      })
+      .eq("id", editingId);
 
-    console.log(data);
+  console.log(error);
 
-    console.log(error);
-    }
+} else {
+
+  const { data, error } =
+    await supabase
+      .from("courses")
+      .insert([
+        {
+          title,
+          description,
+          full_description:
+            fullDescription,
+          price,
+          image: imageUrl,
+          course_document:
+            documentUrl,
+        },
+      ]);
+
+  console.log(data);
+
+  console.log(error);
+}
 
     resetForm();
 
@@ -73,13 +148,26 @@ const AdminCourses = () => {
 
   const handleEdit = (course) => {
 
-    setEditingId(course.id);
+  setEditingId(course.id);
 
-    setTitle(course.title);
-    setDescription(course.description);
-    setPrice(course.price);
-    setImage(course.image);
-  };
+  setTitle(course.title);
+
+  setDescription(
+    course.description
+  );
+
+  setFullDescription(
+    course.full_description
+  );
+
+  setPrice(course.price);
+
+  setImage(course.image);
+
+  setCourseDocument(
+    course.course_document
+  );
+};
 
   const handleDelete = async (id) => {
 
@@ -102,8 +190,10 @@ const AdminCourses = () => {
 
     setTitle("");
     setDescription("");
+    setFullDescription("");
     setPrice("");
     setImage("");
+    setCourseDocument("");
   };
 
   return (
@@ -145,6 +235,18 @@ const AdminCourses = () => {
               }
             />
 
+            <textarea
+              placeholder="Full Course Details"
+              className="form-control mb-3"
+              rows="10"
+              value={fullDescription}
+              onChange={(e) =>
+                setFullDescription(
+                  e.target.value
+                )
+              }
+            />
+
             <input
               type="text"
               placeholder="Price"
@@ -156,12 +258,24 @@ const AdminCourses = () => {
             />
 
             <input
-              type="text"
-              placeholder="Image URL"
+              type="file"
               className="form-control mb-3"
-              value={image}
               onChange={(e) =>
-                setImage(e.target.value)
+                setImageFile(
+                  e.target.files[0])
+              }
+            />
+
+            <input
+              type="file"
+              className="form-control mb-3"
+
+              accept=".pdf,.doc,.docx"
+
+              onChange={(e) =>
+                setDocumentFile(
+                  e.target.files[0]
+                )
               }
             />
 

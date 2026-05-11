@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaUsers, FaBookOpen, FaCreditCard, FaChartLine, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import AdminSidebar from "../components/AdminSidebar";
+import { supabase } from "../services/supabase";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -11,16 +12,102 @@ const AdminDashboard = () => {
     completedPayments: 0
   });
 
+  const [
+  recentRegistrations,
+  setRecentRegistrations
+] = useState([]);
+
 
   useEffect(() => {
-    // Mock data - in real app, fetch from API
-    setStats({
-      totalRegistrations: 1250,
-      totalCourses: 6,
-      totalRevenue: 250000,
-      completedPayments: 890
-    });
-  }, []);
+
+  fetchDashboardStats();
+
+  fetchRecentRegistrations();
+
+}, []);
+
+const fetchDashboardStats = async () => {
+
+  // Registrations Count
+  const { count: registrationsCount } =
+    await supabase
+      .from("registrations")
+      .select("*", {
+        count: "exact",
+        head: true,
+      });
+
+  // Courses Count
+  const { count: coursesCount } =
+    await supabase
+      .from("courses")
+      .select("*", {
+        count: "exact",
+        head: true,
+      });
+
+  // Completed Payments
+  const { count: completedPayments } =
+    await supabase
+      .from("registrations")
+      .select("*", {
+        count: "exact",
+        head: true,
+      })
+      .eq("payment_status", "completed");
+
+  // Revenue
+  const { data: revenueData } =
+    await supabase
+      .from("registrations")
+      .select("amount")
+      .eq("payment_status", "completed");
+
+  let totalRevenue = 0;
+
+  revenueData?.forEach((item) => {
+
+    totalRevenue +=
+      Number(item.amount);
+
+  });
+
+  setStats({
+    totalRegistrations:
+      registrationsCount || 0,
+
+    totalCourses:
+      coursesCount || 0,
+
+    totalRevenue,
+
+    completedPayments:
+      completedPayments || 0,
+  });
+};
+
+
+  const fetchRecentRegistrations =
+  async () => {
+
+  const { data, error } =
+    await supabase
+      .from("registrations")
+      .select("*")
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(5);
+
+  if (error) {
+
+    console.log(error);
+
+    return;
+  }
+
+  setRecentRegistrations(data);
+};
 
   const fadeInUp = {
     initial: { opacity: 0, y: 60 },
@@ -55,17 +142,6 @@ const AdminDashboard = () => {
     }
   ];
 
-  const mockRegistrations = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', course: 'Digital Marketing', status: 'completed', date: '2024-01-15' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', course: 'IELTS Preparation', status: 'pending', date: '2024-01-14' },
-    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', course: 'SAP FICO', status: 'completed', date: '2024-01-13' }
-  ];
-
-  const mockCourses = [
-    { id: 1, title: 'Digital Marketing Mastery', price: 25000, students: 150 },
-    { id: 2, title: 'SAP FICO Certification', price: 35000, students: 89 },
-    { id: 3, title: 'IELTS Preparation', price: 15000, students: 210 }
-  ];
 
   return (
     <div className="d-flex">
@@ -125,17 +201,17 @@ const AdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockRegistrations.map((reg) => (
+                      {recentRegistrations.map((reg) => (
                         <tr key={reg.id}>
                           <td>{reg.name}</td>
                           <td>{reg.email}</td>
-                          <td>{reg.course}</td>
+                          <td>{reg.course_name}</td>
                           <td>
-                            <span className={`badge bg-${reg.status === 'completed' ? 'success' : 'warning'}`}>
-                              {reg.status}
+                            <span className={`badge bg-${reg.payment_status === 'completed' ? 'success' : 'warning'}`}>
+                              {reg.payment_status}
                             </span>
                           </td>
-                          <td>{reg.date}</td>
+                          <td>{ new Date(reg.created_at).toLocaleDateString() }</td>
                         </tr>
                       ))}
                     </tbody>

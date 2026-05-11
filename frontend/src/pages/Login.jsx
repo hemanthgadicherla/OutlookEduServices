@@ -18,7 +18,7 @@ const Login = () => {
                     <button className="btn btn-primary w-100"> Login </button> 
                         </form> 
                     <p className="text-center mt-3"> Don't have an account?{" "} 
-                        <Link to="/register">Register</Link> 
+                        <Link to="/registration">Register</Link> 
                     </p> 
                 </div> 
             </div> 

@@ -19,7 +19,7 @@ const LeadPopup = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShow(true);
-    }, 9000);
+    }, 6000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -116,62 +116,116 @@ const LeadPopup = () => {
       centered
       backdrop="static"
     >
-      <Modal.Header closeButton>
-        <Modal.Title>
-          Get Free Study Abroad Guidance
-        </Modal.Title>
-      </Modal.Header>
+      <Modal.Body
+        className="p-4 position-relative"
+        style={{
+          background: "#111827",
+          borderRadius: "18px",
+          border: "1px solid rgba(255,215,0,0.15)"
+        }}
+      >
 
-      <Modal.Body>
+        {/* Close Button */}
+        <button
+          onClick={handleClose}
+          style={{
+            position: "absolute",
+            top: "12px",
+            right: "12px",
+            background: "transparent",
+            border: "none",
+            color: "#FFD700",
+            fontSize: "1.4rem",
+            cursor: "pointer"
+          }}
+        >
+          ×
+        </button>
+
+        {/* Header */}
+        <div className="text-center mb-4">
+          <h4
+            className="fw-bold mb-2"
+            style={{ color: "#FFD700" }}
+          >
+            Free Guidance
+          </h4>
+
+          <p
+            className="mb-0"
+            style={{
+              color: "#d1d5db",
+              fontSize: "0.9rem"
+            }}
+          >
+            Get expert counseling for admissions, visas & Courses.
+          </p>
+        </div>
+
         <Form onSubmit={handleSubmit}>
 
           {/* Name */}
           <Form.Group className="mb-3">
-            <Form.Label>Name</Form.Label>
-
             <Form.Control
               type="text"
               name="name"
-              placeholder="Enter your name"
+              placeholder="Your Name"
               value={formData.name}
               onChange={handleInputChange}
               required
+              style={{
+                background: "#ffffff",
+                border: "1px solid rgba(255,215,0,0.2)",
+                color: "white",
+                borderRadius: "10px",
+                padding: "12px"
+              }}
             />
           </Form.Group>
 
           {/* Phone */}
           <Form.Group className="mb-3">
-            <Form.Label>Phone Number</Form.Label>
-
             <Form.Control
               type="tel"
               name="phone"
-              placeholder="Enter your phone number"
+              placeholder="Phone Number"
               value={formData.phone}
               onChange={handleInputChange}
               maxLength={10}
               required
+              style={{
+                background: "#ffffff",
+                border: "1px solid rgba(255,215,0,0.2)",
+                color: "white",
+                borderRadius: "10px",
+                padding: "12px"
+              }}
             />
           </Form.Group>
 
           {/* Subject */}
           <Form.Group className="mb-3">
-            <Form.Label>Subject</Form.Label>
-
             <Form.Select
               name="subject"
               value={formData.subject}
               onChange={handleInputChange}
               required
+              style={{
+                background: "#1f2937",
+                border: "1px solid rgba(255,215,0,0.2)",
+                color: "white",
+                borderRadius: "10px",
+                padding: "12px"
+              }}
             >
-              <option value="">Select a subject...</option>
+              <option value="">Select Subject</option>
 
               <option value="Study Abroad Consultation">
                 Study Abroad Consultation
               </option>
 
               <option value="Visa Services">
-                Visit Visa
+                Visa Services
               </option>
 
               <option value="Course Information">
@@ -184,26 +238,16 @@ const LeadPopup = () => {
             </Form.Select>
           </Form.Group>
 
-          {/* Message */}
-          <Form.Group className="mb-4">
-            <Form.Label>Message</Form.Label>
-
-            <Form.Control
-              as="textarea"
-              rows={4}
-              name="message"
-              placeholder="Write your message..."
-              value={formData.message}
-              onChange={handleInputChange}
-            />
-          </Form.Group>
-
-          {/* Submit Button */}
+          {/* Submit */}
           <Button
-            variant="primary"
             type="submit"
-            className="w-100"
+            className="w-100 fw-bold border-0 py-2"
             disabled={isSubmitting}
+            style={{
+              background: "linear-gradient(135deg, #FFD700, #f5c400)",
+              color: "#111827",
+              borderRadius: "10px"
+            }}
           >
             {isSubmitting ? (
               <>
@@ -215,7 +259,7 @@ const LeadPopup = () => {
                 Submitting...
               </>
             ) : (
-              "Submit"
+              "Get Free Consultation"
             )}
           </Button>
 

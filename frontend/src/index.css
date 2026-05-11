@@ -142,3 +142,15 @@ h1, h2, h3, h4, h5, h6 {
   transform: scale(1.1);
   box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4);
 }
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body,
+html {
+  overflow-x: hidden;
+  background: #000;
+}
