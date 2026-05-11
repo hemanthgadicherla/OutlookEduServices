@@ -218,7 +218,7 @@ const LeadPopup = () => {
                 padding: "12px"
               }}
             >
-              <option value="">Select Subject</option>
+              <option value="">Select Services</option>
 
               <option value="Study Abroad Consultation">
                 Study Abroad Consultation
@@ -259,7 +259,7 @@ const LeadPopup = () => {
                 Submitting...
               </>
             ) : (
-              "Get Free Consultation"
+              "Submit"
             )}
           </Button>
 
