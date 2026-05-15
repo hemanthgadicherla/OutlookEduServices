@@ -12,30 +12,11 @@ const {
   '../controllers/dashboard'
 );
 
-const {
 
-  verifyToken,
-
-  isAdmin
-
-} = require(
-  '../middleware/authMiddleware'
-);
-
-
-// DASHBOARD STATS
 router.get(
-
-  '/stats',
-
-  verifyToken,
-
-  isAdmin,
-
+  '/',
   getDashboardStats
-
 );
-
 
 module.exports =
   router;

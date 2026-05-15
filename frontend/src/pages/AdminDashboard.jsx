@@ -70,6 +70,7 @@ const AdminDashboard = () => {
       const response =
         await dashboardAPI
           .getStats();
+      console.log(response);
 
       if (response.success) {
 

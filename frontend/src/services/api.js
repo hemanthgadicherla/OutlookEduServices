@@ -371,21 +371,30 @@ export const dashboardAPI = {
 
   getStats: async () => {
 
-    const response =
-      await fetch(
+    try {
 
-        `${API_BASE_URL}/dashboard/stats`,
+      const response =
+        await fetch(
 
-        {
+          'http://localhost:5000/api/dashboard'
 
-          headers:
-            getHeaders()
+        );
 
-        }
+      return await response.json();
 
-      );
+    }
 
-    return await response.json();
+    catch (error) {
+
+      console.log(error);
+
+      return {
+
+        success: false
+
+      };
+
+    }
 
   }
 

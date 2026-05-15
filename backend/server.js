@@ -1,3 +1,6 @@
+const dashboardRoutes =
+  require('./routes/dashboard');
+
 const express =
   require('express');
 
@@ -302,6 +305,10 @@ app.get(
   }
 );
 
+app.use(
+  '/api/dashboard',
+  dashboardRoutes
+);
 
 // =========================
 // 404 HANDLER
