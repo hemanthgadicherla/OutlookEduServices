@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button, Form, Spinner } from "react-bootstrap";
 import { toast } from "react-toastify";
-import { supabase } from "../services/supabase";
+import { leadAPI } from "../services/api";
 
 const LeadPopup = () => {
   const [show, setShow] = useState(false);
@@ -68,26 +68,33 @@ const LeadPopup = () => {
 
     try {
       const payload = {
-        name: formData.name.trim(),
-        phone: formData.phone.trim(),
-        subject: formData.subject,
-        message: formData.message.trim(),
+        name:
+          formData.name.trim(),
+        email: "",
+        phone:
+          formData.phone.trim(),
+        subject:
+          formData.subject,
+        message:
+          formData.message.trim()
       };
 
       console.log("Submitting Payload:", payload);
 
-      const { data, error } = await supabase
-        .from("leads")
-        .insert([payload])
-        .select();
+      const response =
+        await leadAPI.createLead(
+          payload
+        );
 
-      if (error) {
-        console.error("Supabase Error:", error);
-        toast.error(error.message);
+      if (!response.success) {
+
+        toast.error(
+          response.message
+        );
+
         return;
-      }
 
-      console.log("Inserted Data:", data);
+      }
 
       toast.success("Thank you! We'll contact you soon.");
 

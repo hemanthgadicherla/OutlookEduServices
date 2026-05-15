@@ -106,7 +106,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .navbar .nav-link.active {
-  color: #81795c !important;
+  color: #facc15 !important;
 }
 
 .navbar-toggler {
@@ -117,6 +117,7 @@ h1, h2, h3, h4, h5, h6 {
 .navbar-toggler:focus {
   box-shadow: none !important;
 }
+
 
 /* WhatsApp Floating Button */
 .whatsapp-float {

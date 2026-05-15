@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { supabase } from "../services/supabase";
+import { blogAPI } from "../services/api";
 
 const BlogDetail = () => {
 
-  const { id } = useParams();
+  const { slug } = useParams();
 
-  const [blog, setBlog] =
-    useState(null);
+  const [blog, setBlog] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
 
   const [otherBlogs,
   setOtherBlogs] = useState([]);
@@ -17,44 +20,80 @@ const BlogDetail = () => {
 
     fetchBlog();
 
-    fetchOtherBlogs();
-
-  }, []);
+  }, [slug]);
 
   const fetchBlog = async () => {
+    try {
 
-    const { data, error } =
-      await supabase
-        .from("blogs")
-        .select("*")
-        .eq("id", id)
-        .single();
+      setLoading(true);
 
-    if (error) {
+      const response =
+        await blogAPI.getSingleBlog(
+          slug
+        );
 
-      console.log(error);
+      if (response.success) {
 
-      return;
+        setBlog(response.data);
+
+      }
+
+      else {
+
+        setError(
+          "Blog not found"
+        );
+
+      }
+
     }
 
-    setBlog(data);
-  };
+    catch (err) {
 
-  const fetchOtherBlogs =
-    async () => {
+      console.error(err);
 
-    const { data, error } =
-      await supabase
-        .from("blogs")
-        .select("*")
-        .neq("id", id)
-        .limit(3);
+      setError(
+        "Failed to load blog"
+      );
 
-    if (!error) {
-
-      setOtherBlogs(data);
     }
+
+    finally {
+
+      setLoading(false);
+
+    }
+
   };
+
+  if (loading) {
+    return (
+      <div
+        className="
+          text-center
+          text-white
+          py-5
+        "
+      >
+        Loading blog...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className="
+          text-center
+          text-danger
+          py-5
+        "
+      >
+        {error}
+      </div>
+    );
+  }
+
 
   if (!blog) {
 
@@ -263,9 +302,9 @@ const BlogDetail = () => {
             }}
           >
             📅 {
-              blog.date
+              blog.created_at
                 ? new Date(
-                    blog.date
+                    blog.created_at
                   ).toLocaleDateString()
                 : "No Date"
             }
@@ -282,7 +321,7 @@ const BlogDetail = () => {
                 "1px solid rgba(255,255,255,0.08)",
             }}
           >
-            ⏱️ {blog.readTime}
+            ⏱️ {blog.read_time}
           </div>
 
         </div>

@@ -1,153 +1,395 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState
+} from "react";
 
-import { supabase } from "../services/supabase";
+import AdminSidebar
+  from "../components/AdminSidebar";
 
-import AdminSidebar from "../components/AdminSidebar";
+import {
+  leadAPI
+} from "../services/api";
+
 
 const AdminLeads = () => {
 
-  const [leads, setLeads] = useState([]);
-  const [search, setSearch] = useState("");
+  const [leads, setLeads] =
+    useState([]);
+
+  const [search, setSearch] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
 
   useEffect(() => {
 
     fetchLeads();
 
-}, []);
+  }, []);
 
-    const filteredLeads = leads.filter((lead) => {
 
-  return (
+  // FETCH LEADS
+  const fetchLeads =
+    async () => {
 
-    lead.name
-      ?.toLowerCase()
-      .includes(search.toLowerCase())
+    try {
 
-    ||
+      setLoading(true);
 
-    lead.email
-      ?.toLowerCase()
-      .includes(search.toLowerCase())
+      const response =
+        await leadAPI
+          .getLeads();
 
-    ||
+      if (response.success) {
 
-    lead.phone
-      ?.includes(search)
+        setLeads(
+          response.data
+        );
 
-  );
-});
+      }
 
-    const handleDelete = async (id) => {
-
-  const confirmDelete =
-    window.confirm(
-      "Are you sure you want to delete this lead?"
-    );
-
-  if (!confirmDelete) return;
-
-  const { error } = await supabase
-    .from("leads")
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-
-    console.log(error);
-
-    return;
-  }
-
-  fetchLeads();
-};
-
-  const fetchLeads = async () => {
-
-    const { data, error } = await supabase
-      .from("leads")
-      .select("*")
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (error) {
-      console.log(error);
-      return;
     }
 
-    setLeads(data);
+    catch (error) {
+
+      console.log(error);
+
+    }
+
+    finally {
+
+      setLoading(false);
+
+    }
+
   };
+
+
+  // UPDATE CONTACT STATUS
+  const handleContactToggle =
+    async (
+      id,
+      contacted
+    ) => {
+
+    try {
+
+      const response =
+        await leadAPI
+          .updateLead(
+            id,
+            {
+              contacted:
+                !contacted
+            }
+          );
+
+      if (response.success) {
+
+        fetchLeads();
+
+      }
+
+    }
+
+    catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+
+  // DELETE LEAD
+  const handleDelete =
+    async (id) => {
+
+    const confirmDelete =
+      window.confirm(
+        "Delete this lead?"
+      );
+
+    if (!confirmDelete)
+      return;
+
+
+    try {
+
+      const response =
+        await leadAPI
+          .deleteLead(id);
+
+      if (response.success) {
+
+        alert(
+          "Lead deleted successfully"
+        );
+
+        fetchLeads();
+
+      }
+
+    }
+
+    catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+
+  // FILTER LEADS
+  const filteredLeads =
+    leads.filter(
+      (lead) => {
+
+        return (
+
+          lead.name
+            ?.toLowerCase()
+
+            .includes(
+              search.toLowerCase()
+            )
+
+          ||
+
+          lead.email
+            ?.toLowerCase()
+
+            .includes(
+              search.toLowerCase()
+            )
+
+          ||
+
+          lead.phone
+            ?.includes(search)
+
+        );
+
+      }
+    );
+
 
   return (
 
-  <div className="d-flex">
+    <div className="d-flex">
 
-    <AdminSidebar />
+      <AdminSidebar />
 
-    <div className="flex-grow-1 p-4">
+      <div
+        className="flex-grow-1 p-4 bg-light"
+        style={{
+          minHeight: "100vh"
+        }}
+      >
 
-      <h1 className="mb-4">
-        Leads
-      </h1>
+        <h1 className="mb-4">
+          Leads Management
+        </h1>
 
-      <input
-        type="text"
-        placeholder="Search leads..."
-        className="form-control mb-4"
-        value={search}
-        onChange={(e) =>
-        setSearch(e.target.value)
-        }
-        />
 
-      <table className="table">
+        {/* SEARCH */}
+        <div className="row mb-4">
 
-        <thead>
+          <div className="col-md-6">
 
-          <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Subject</th>
-            <th>Action</th>
-          </tr>
+            <input
 
-        </thead>
+              type="text"
 
-        <tbody>
+              placeholder="Search leads..."
 
-          {
-            filteredLeads.map((lead) => (
+              className="form-control"
 
-              <tr key={lead.id}>
+              value={search}
 
-                <td>{lead.name}</td>
+              onChange={(e) =>
+                setSearch(
+                  e.target.value
+                )
+              }
 
-                <td>{lead.phone}</td>
+            />
 
-                <td>{lead.subject}</td>
+          </div>
 
-                <td>
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => handleDelete(lead.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
+        </div>
 
-              </tr>
 
-            ))
-          }
+        {/* TABLE */}
+        <div className="card shadow-sm">
 
-        </tbody>
+          <div className="table-responsive">
 
-      </table>
+            <table className="table table-bordered mb-0">
+
+              <thead className="table-dark">
+
+                <tr>
+
+                  <th>Name</th>
+
+                  <th>Email</th>
+
+                  <th>Phone</th>
+
+                  <th>Subject</th>
+
+                  <th>Status</th>
+
+                  <th>Actions</th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {
+                  loading ? (
+
+                    <tr>
+
+                      <td
+                        colSpan="6"
+                        className="text-center p-4"
+                      >
+                        Loading...
+                      </td>
+
+                    </tr>
+
+                  ) : filteredLeads.length === 0 ? (
+
+                    <tr>
+
+                      <td
+                        colSpan="6"
+                        className="text-center p-4"
+                      >
+                        No leads found
+                      </td>
+
+                    </tr>
+
+                  ) : (
+
+                    filteredLeads.map(
+                      (lead) => (
+
+                        <tr
+                          key={lead.id}
+                        >
+
+                          <td>
+                            {lead.name}
+                          </td>
+
+
+                          <td>
+                            {lead.email}
+                          </td>
+
+
+                          <td>
+                            {lead.phone}
+                          </td>
+
+
+                          <td>
+                            {lead.subject}
+                          </td>
+
+
+                          <td>
+
+                            <button
+
+                              className={`btn btn-sm ${
+
+                                lead.contacted
+
+                                  ? "btn-success"
+
+                                  : "btn-warning"
+
+                              }`}
+
+                              onClick={() =>
+                                handleContactToggle(
+
+                                  lead.id,
+
+                                  lead.contacted
+
+                                )
+                              }
+
+                            >
+
+                              {
+
+                                lead.contacted
+
+                                  ? "Contacted"
+
+                                  : "Pending"
+
+                              }
+
+                            </button>
+
+                          </td>
+
+
+                          <td>
+
+                            <button
+
+                              className="btn btn-danger btn-sm"
+
+                              onClick={() =>
+                                handleDelete(
+                                  lead.id
+                                )
+                              }
+
+                            >
+                              Delete
+                            </button>
+
+                          </td>
+
+                        </tr>
+
+                      )
+                    )
+
+                  )
+                }
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </div>
 
     </div>
 
-  </div>
-    );
+  );
+
 };
 
 export default AdminLeads;

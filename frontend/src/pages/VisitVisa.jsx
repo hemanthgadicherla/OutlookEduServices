@@ -35,24 +35,16 @@ const VisitVisa = () => {
       validity: '1-5 years',
       icon: <FaCheckCircle />
     },
-    {
-      type: 'Work Visa',
-      description: 'For employment and long-term professional opportunities.',
-      duration: '1-5 years',
-      processing: '6-12 weeks',
-      validity: '2-10 years',
-      icon: <FaClock />
-    }
   ];
 
   const countries = [
-    { name: 'USA', flag: '🇺🇸', processingTime: '2-4 weeks', successRate: '95%' },
-    { name: 'UK', flag: '🇬🇧', processingTime: '3-5 weeks', successRate: '92%' },
-    { name: 'Canada', flag: '🇨🇦', processingTime: '2-6 weeks', successRate: '94%' },
-    { name: 'Australia', flag: '🇦🇺', processingTime: '4-8 weeks', successRate: '91%' },
-    { name: 'New Zealand', flag: '🇳🇿', processingTime: '2-4 weeks', successRate: '96%' },
-    { name: 'Ireland', flag: '🇮🇪', processingTime: '1-2 weeks', successRate: '98%' },
-    { name: 'Europe', flag: '🇪🇺', processingTime: '1-2 weeks', successRate: '93%' }
+    { name: 'USA', flag: "https://flagcdn.com/w320/us.png", processingTime: '2-4 weeks', successRate: '95%' },
+    { name: 'UK', flag: "https://flagcdn.com/w320/gb.png", processingTime: '3-5 weeks', successRate: '92%' },
+    { name: 'Canada', flag: "https://flagcdn.com/w320/ca.png", processingTime: '2-6 weeks', successRate: '94%' },
+    { name: 'Australia', flag: "https://flagcdn.com/w320/au.png", processingTime: '4-8 weeks', successRate: '91%' },
+    { name: 'New Zealand', flag: "https://flagcdn.com/w320/nz.png", processingTime: '2-4 weeks', successRate: '96%' },
+    { name: 'Ireland', flag: "https://flagcdn.com/w320/ie.png", processingTime: '1-2 weeks', successRate: '98%' },
+    { name: 'Europe', flag: "https://flagcdn.com/w320/eu.png", processingTime: '1-2 weeks', successRate: '93%' }
   ];
 
   const process = [
@@ -395,8 +387,6 @@ const VisitVisa = () => {
 
                     "✈️ Tourist Visa",
 
-                    "💼 Work Permit",
-
                     "🌍 Immigration",
 
                     "📄 Documentation",
@@ -594,7 +584,7 @@ const VisitVisa = () => {
 
           {/* VISA CARDS */}
 
-          <div className="row g-4">
+          <div className="row g-4 justify-content-center">
 
             {
 
@@ -1103,7 +1093,7 @@ const VisitVisa = () => {
 
           {/* DESTINATION CARDS */}
 
-          <div className="row g-4">
+          <div className="row g-4 justify-content-center">
 
             {
 
@@ -1222,7 +1212,16 @@ const VisitVisa = () => {
                       }}
                     >
 
-                      {country.flag}
+                      <img
+                        src={country.flag}
+                        alt={country.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: "10px",
+                        }}
+                      />
 
                     </motion.div>
 

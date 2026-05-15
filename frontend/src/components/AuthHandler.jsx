@@ -1,10 +1,10 @@
-import React, {
-  useEffect,
-  useState
+import {
+  useEffect
 } from "react";
 
 import {
-  Navigate
+  useLocation,
+  useNavigate
 } from "react-router-dom";
 
 import {
@@ -16,26 +16,37 @@ import {
 } from "../services/api";
 
 
-const AdminProtectedRoute = ({
-  children
-}) => {
+const AuthHandler = () => {
 
-  const [loading, setLoading] =
-    useState(true);
+  const navigate =
+    useNavigate();
 
-  const [isAdmin, setIsAdmin] =
-    useState(false);
+  const location =
+    useLocation();
 
 
   useEffect(() => {
 
-    checkAdmin();
+    handleSession();
 
   }, []);
 
 
-  const checkAdmin =
+  const handleSession =
     async () => {
+
+    // ONLY HANDLE OAUTH CALLBACK
+    if (
+      !window.location.hash
+        .includes(
+          'access_token'
+        )
+    ) {
+
+      return;
+
+    }
+
 
     try {
 
@@ -48,9 +59,7 @@ const AdminProtectedRoute = ({
         .getSession();
 
 
-      if (!session) {
-
-        setLoading(false);
+      if (!session?.user) {
 
         return;
 
@@ -83,15 +92,18 @@ const AdminProtectedRoute = ({
           });
 
 
-      // ADMIN CHECK
-      if (
-        response.role ===
-        'admin'
-      ) {
+      // CLEAN URL
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname
+      );
 
-        setIsAdmin(true);
 
-      }
+      // REDIRECT
+      navigate(
+        response.redirect
+      );
 
     }
 
@@ -101,37 +113,11 @@ const AdminProtectedRoute = ({
 
     }
 
-    finally {
-
-      setLoading(false);
-
-    }
-
   };
 
 
-  if (loading) {
-
-    return (
-
-      <h3 className="text-center py-5">
-
-        Loading...
-
-      </h3>
-
-    );
-
-  }
-
-
-  return isAdmin
-
-    ? children
-
-    : <Navigate to="/login" />;
+  return null;
 
 };
 
-export default
-  AdminProtectedRoute;
+export default AuthHandler;

@@ -15,10 +15,10 @@ const About = () => {
   };
 
   const stats = [
-    { number: '5000+', label: 'Students Guided', icon: <FaUserGraduate /> },
-    { number: '50+', label: 'Partner Universities', icon: <FaGraduationCap /> },
+    { number: '500+', label: 'Students Guided', icon: <FaUserGraduate /> },
+    { number: '25+', label: 'Partner Universities', icon: <FaGraduationCap /> },
     { number: '98%', label: 'Visa Success Rate', icon: <FaPassport /> },
-    { number: '15+', label: 'Years Experience', icon: <FaMedal /> }
+    { number: '7+', label: 'Years Experience', icon: <FaMedal /> }
   ];
 
   const team = [
@@ -471,7 +471,7 @@ const About = () => {
                       color: "#ffc107",
                     }}
                   >
-                    5+
+                    7+
                   </h3>
 
                   <small className="text-white">
@@ -897,7 +897,7 @@ const About = () => {
                       color: "#ffc107",
                     }}
                   >
-                    250+
+                    500+
                   </h3>
 
                   <small className="text-white">

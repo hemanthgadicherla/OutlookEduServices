@@ -707,10 +707,17 @@ const StudyAbroad = () => {
                           }}
                         >
 
-                          {country.flag}
-
+                          <img
+                            src={country.flag}
+                            alt={country.name}
+                            style={{
+                              width: "80%",
+                              height: "80%",
+                              objectFit: "cover",
+                              borderRadius: "50%",
+                            }}
+                          />
                         </div>
-
                       </div>
 
                       {/* CONTENT */}

@@ -15,6 +15,7 @@ import Footer from './components/Footer';
 import ScrollToTop from "./components/ScrollToTop";
 import LeadPopup from './components/LeadPopup';
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import AuthHandler from "./components/AuthHandler";
 
 // Pages
 import Home from './pages/Home';
@@ -29,14 +30,13 @@ import Login from "./pages/Login";
 import Registration from './pages/Registration';
 import BlogDetail from "./pages/BlogDetail";
 import CourseDetail from "./pages/CourseDetail";
-
-import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCourses from "./pages/AdminCourses";
 import AdminBlogs from "./pages/AdminBlogs";
 import AdminLeads from "./pages/AdminLeads";
 import AdminRegistrations from "./pages/AdminRegistrations";
 import AdminSubscribers from "./pages/AdminSubscribers";
+import LMSDashboard from "./pages/LMSDashboard";
 
 function App() {
 
@@ -84,6 +84,8 @@ function App() {
 
       <div className="App">
 
+        <AuthHandler />
+
         {!shouldHideLeadPopup && <LeadPopup />}
 
         {!isAdminRoute && <Navbar />}
@@ -111,7 +113,7 @@ function App() {
 
           <Route path="/blogs" element={<Blogs />} />
 
-          <Route path="/blog/:id" element={<BlogDetail />} />
+          <Route path="/blog/:slug" element={<BlogDetail />} />
 
           <Route path="/contact" element={<Contact />} />
 
@@ -119,11 +121,11 @@ function App() {
 
           <Route path="/registration" element={<Registration />} />
 
+          <Route path="/lms" element={<LMSDashboard />} />
+
           
 
           {/* Admin Routes */}
-
-          <Route path="/admin" element={<AdminLogin />} />
 
           <Route
             path="/admin/dashboard"

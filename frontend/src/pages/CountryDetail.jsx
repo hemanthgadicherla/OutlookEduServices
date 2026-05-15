@@ -113,7 +113,16 @@ const About = () => {
                     fontSize: "5rem",
                   }}
                 >
-                  {country.flag}
+                  <img
+                    src={country.flag}
+                    alt={country.name}
+                    style={{
+                      width: "30%",
+                      height: "50%",
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                    }}
+                  />
                 </motion.div>
 
                 <h1
@@ -247,7 +256,7 @@ const About = () => {
                       color: "#ffc107",
                     }}
                   >
-                    5000+
+                    250+
                   </h3>
 
                   <small className="text-white">
@@ -359,19 +368,19 @@ const About = () => {
             {[
               {
                 icon: <FaUniversity />,
-                number: "65,000+",
+                number: "50+",
                 text: "Universities & Colleges",
               },
 
               {
                 icon: <FaGraduationCap />,
-                number: "1M+",
+                number: "250+",
                 text: "International Students",
               },
 
               {
                 icon: <FaBookOpen />,
-                number: "50+",
+                number: "20+",
                 text: "Study Programs",
               },
 

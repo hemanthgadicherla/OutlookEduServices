@@ -2,12 +2,12 @@ export const studyAbroadCountries = [
   {
     slug: "usa",
     name: "United States",
-    flag: "🇺🇸",
+    flag: "https://flagcdn.com/w320/us.png",
     image: "https://images.unsplash.com/photo-1485738422979-f5c462d49f74",
 
-    universitiesCount: "4,000+",
-    students: "1M+",
-    programs: "50+",
+    universitiesCount: "53+",
+    students: "80+",
+    programs: "25+",
     employment: "93%",
 
     heroText:
@@ -55,7 +55,7 @@ export const studyAbroadCountries = [
   {
     slug: "uk",
     name: "United Kingdom",
-    flag: "🇬🇧",
+    flag: "https://flagcdn.com/w320/gb.png",
     image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad",
 
     universitiesCount: "160+",
@@ -108,8 +108,8 @@ export const studyAbroadCountries = [
   {
     slug: "canada",
     name: "Canada",
-    flag: "🇨🇦",
-    image: "https://images.unsplash.com/photo-1503614472-8c93d56cd263",
+    flag: "https://flagcdn.com/w320/ca.png",
+    image: "https://images.unsplash.com/photo-1503614472-8c93d56cd82d",
 
     universitiesCount: "200+",
     students: "800K+",
@@ -161,7 +161,7 @@ export const studyAbroadCountries = [
   {
     slug: "australia",
     name: "Australia",
-    flag: "🇦🇺",
+    flag: "https://flagcdn.com/w320/au.png",
     image: "https://images.unsplash.com/photo-1523482580672-f109ba8cb9be",
 
     universitiesCount: "40+",
@@ -214,8 +214,8 @@ export const studyAbroadCountries = [
   {
     slug: "nz",
     name: "New Zealand",
-    flag: "🇳🇿",
-    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad",
+    flag: "https://flagcdn.com/w320/nz.png",
+    image: "https://images.unsplash.com/photo-1469521669194-babb45599def",
 
     universitiesCount: "160+",
     students: "600K+",
@@ -267,7 +267,7 @@ export const studyAbroadCountries = [
   {
     slug: "IE",
     name: "Ireland",
-    flag: "🇮🇪",
+    flag: "https://flagcdn.com/w320/ie.png",
     image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad",
 
     universitiesCount: "160+",
@@ -320,7 +320,7 @@ export const studyAbroadCountries = [
   {
     slug: "EU",
     name: "Europe",
-    flag: "🇪🇺",
+    flag: "https://flagcdn.com/w320/eu.png",
     image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad",
 
     universitiesCount: "160+",

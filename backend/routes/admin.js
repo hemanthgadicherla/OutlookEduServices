@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken } = require('../controllers/auth');
+const { verifyToken } = require('../middleware/authMiddleware');
 const { getRegistrations } = require('../controllers/registrations');
 const { getPayments, getPaymentStats } = require('../controllers/payments');
 const { getCourses, createCourse, updateCourse, deleteCourse } = require('../controllers/courses');

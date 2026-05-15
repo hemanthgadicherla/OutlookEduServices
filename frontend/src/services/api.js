@@ -1,80 +1,614 @@
-import axios from 'axios';
+const API_BASE_URL =
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  import.meta.env.VITE_API_URL ||
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+  'http://localhost:5000/api';
 
-// Request interceptor for auth
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+// HEADERS
+const getHeaders = () => {
 
-// Auth APIs
-export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
+  const token =
+    localStorage.getItem(
+      'adminToken'
+    );
+
+  return {
+
+    'Content-Type':
+      'application/json',
+
+    Authorization:
+      `Bearer ${token}`
+
+  };
+
 };
 
-// Course APIs
-export const courseAPI = {
-  getCourses: () => api.get('/courses'),
-  createCourse: (courseData) => api.post('/courses', courseData),
-  updateCourse: (id, courseData) => api.put(`/courses/${id}`, courseData),
-  deleteCourse: (id) => api.delete(`/courses/${id}`),
-};
 
-// Registration APIs
-export const registrationAPI = {
-  createRegistration: (registrationData) => api.post('/registrations', registrationData),
-  getRegistrations: () => api.get('/registrations'),
-};
-
-// Payment APIs
-export const paymentAPI = {
-  createOrder: (orderData) => api.post('/payments/create-order', orderData),
-  verifyPayment: (verificationData) => api.post('/payments/verify', verificationData),
-  getPayments: () => api.get('/payments'),
-};
-
-// Blog APIs
+// BLOG API
 export const blogAPI = {
-  getBlogs: () => api.get('/blogs'),
-  createBlog: (blogData) => api.post('/blogs', blogData),
-  updateBlog: (id, blogData) => api.put(`/blogs/${id}`, blogData),
-  deleteBlog: (id) => api.delete(`/blogs/${id}`),
+
+  // GET BLOGS
+  getBlogs: async () => {
+
+    const response =
+      await fetch(
+        `${API_BASE_URL}/blogs`
+      );
+
+    return await response.json();
+
+  },
+
+
+  // CREATE BLOG
+  createBlog: async (
+    blogData
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/blogs`,
+
+        {
+
+          method: 'POST',
+
+          headers:
+            getHeaders(),
+
+          body: JSON.stringify(
+            blogData
+          )
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+
+  // UPDATE BLOG
+  updateBlog: async (
+    id,
+    blogData
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/blogs/${id}`,
+
+        {
+
+          method: 'PUT',
+
+          headers:
+            getHeaders(),
+
+          body: JSON.stringify(
+            blogData
+          )
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+
+  // DELETE BLOG
+  deleteBlog: async (
+    id
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/blogs/${id}`,
+
+        {
+
+          method: 'DELETE',
+
+          headers:
+            getHeaders()
+
+        }
+
+      );
+
+    return await response.json();
+
+  }
+
 };
 
-// Admin APIs
-export const adminAPI = {
-  getStats: () => api.get('/admin/stats'),
-  getAdminRegistrations: () => api.get('/admin/registrations'),
-  getAdminPayments: () => api.get('/admin/payments'),
-  getAdminCourses: () => api.get('/admin/courses'),
+
+// COURSE API
+export const courseAPI = {
+
+  // Get Courses
+  getCourses: async () => {
+
+    const response =
+      await fetch(
+        `${API_BASE_URL}/courses`
+      );
+
+    return await response.json();
+
+  },
+
+
+  // Create Course
+  createCourse: async (
+    courseData
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/courses`,
+
+        {
+
+          method: 'POST',
+
+          headers:
+            getHeaders(),
+
+          body: JSON.stringify(
+            courseData
+          )
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+
+  // Update Course
+  updateCourse: async (
+    id,
+    courseData
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/courses/${id}`,
+
+        {
+
+          method: 'PUT',
+
+          headers:
+            getHeaders(),
+
+          body: JSON.stringify(
+            courseData
+          )
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+
+  // Delete Course
+  deleteCourse: async (
+    id
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/courses/${id}`,
+
+        {
+
+          method: 'DELETE',
+
+          headers:
+            getHeaders()
+
+        }
+
+      );
+
+    return await response.json();
+
+  }
+
 };
 
-export default api;
+
+// UPLOAD API
+export const uploadAPI = {
+
+  uploadImage: async (
+    file
+  ) => {
+
+    const token =
+      localStorage.getItem(
+        'adminToken'
+      );
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      'image',
+      file
+    );
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/upload/image`,
+
+        {
+
+          method: 'POST',
+
+          headers: {
+
+            Authorization:
+              `Bearer ${token}`
+
+          },
+
+          body: formData
+
+        }
+
+      );
+
+    return await response.json();
+
+  }
+
+};
+
+// REGISTRATION API
+export const registrationAPI = {
+
+  // GET
+  getRegistrations: async () => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/registrations`,
+
+        {
+
+          headers:
+            getHeaders()
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+
+  // UPDATE
+  updateRegistration: async (
+    id,
+    data
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/registrations/${id}`,
+
+        {
+
+          method: 'PUT',
+
+          headers:
+            getHeaders(),
+
+          body: JSON.stringify(
+            data
+          )
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+
+  // DELETE
+  deleteRegistration: async (
+    id
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/registrations/${id}`,
+
+        {
+
+          method: 'DELETE',
+
+          headers:
+            getHeaders()
+
+        }
+
+      );
+
+    return await response.json();
+
+  }
+
+};
+
+export const dashboardAPI = {
+
+  getStats: async () => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/dashboard/stats`,
+
+        {
+
+          headers:
+            getHeaders()
+
+        }
+
+      );
+
+    return await response.json();
+
+  }
+
+};
+
+export const subscriberAPI = {
+
+  // GET
+  getSubscribers: async () => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/subscribers`,
+
+        {
+
+          headers:
+            getHeaders()
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+
+  // DELETE
+  deleteSubscriber: async (
+    id
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/subscribers/${id}`,
+
+        {
+
+          method: 'DELETE',
+
+          headers:
+            getHeaders()
+
+        }
+
+      );
+
+    return await response.json();
+
+  }
+
+};
+
+export const leadAPI = {
+
+
+  // CREATE LEAD
+  createLead: async (
+    leadData
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/leads`,
+
+        {
+
+          method: 'POST',
+
+          headers: {
+
+            'Content-Type':
+              'application/json'
+
+          },
+
+          body: JSON.stringify(
+            leadData
+          )
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+  // GET LEADS
+  getLeads: async () => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/leads`,
+
+        {
+
+          headers:
+            getHeaders()
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+
+  // UPDATE LEAD
+  updateLead: async (
+    id,
+    data
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/leads/${id}`,
+
+        {
+
+          method: 'PUT',
+
+          headers:
+            getHeaders(),
+
+          body: JSON.stringify(
+            data
+          )
+
+        }
+
+      );
+
+    return await response.json();
+
+  },
+
+
+  // DELETE LEAD
+  deleteLead: async (
+    id
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/leads/${id}`,
+
+        {
+
+          method: 'DELETE',
+
+          headers:
+            getHeaders()
+
+        }
+
+      );
+
+    return await response.json();
+
+  }
+
+};
+
+export const userAuthAPI = {
+
+  checkAccess: async (
+    userData
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/user-auth/check-access`,
+
+        {
+
+          method: 'POST',
+
+          headers: {
+
+            'Content-Type':
+              'application/json'
+
+          },
+
+          body: JSON.stringify(
+            userData
+          )
+
+        }
+
+      );
+
+    return await response.json();
+
+  }
+
+};
+
+export const lmsAPI = {
+
+  getCourses: async (
+    userId
+  ) => {
+
+    const response =
+      await fetch(
+
+        `${API_BASE_URL}/lms/courses?user_id=${userId}`
+
+      );
+
+    return await response.json();
+
+  }
+
+};

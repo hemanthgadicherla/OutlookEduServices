@@ -6,18 +6,16 @@ const router =
 
 const {
 
-  createBlog,
+  createLead,
 
-  updateBlog,
+  getLeads,
 
-  deleteBlog,
+  updateLead,
 
-  getBlogs,
-
-  getSingleBlog
+  deleteLead
 
 } = require(
-  '../controllers/blogs'
+  '../controllers/leads'
 );
 
 const {
@@ -31,22 +29,14 @@ const {
 );
 
 
-// PUBLIC ROUTES
-router.get(
-  '/',
-  getBlogs
-);
-
-router.get(
-  '/:slug',
-  getSingleBlog
-);
-
-
-// ADMIN ROUTES
-
-// CREATE BLOG
+// PUBLIC CREATE LEAD
 router.post(
+  '/',
+  createLead
+);
+
+// GET LEADS
+router.get(
 
   '/',
 
@@ -54,12 +44,12 @@ router.post(
 
   isAdmin,
 
-  createBlog
+  getLeads
 
 );
 
 
-// UPDATE BLOG
+// UPDATE LEAD
 router.put(
 
   '/:id',
@@ -68,12 +58,12 @@ router.put(
 
   isAdmin,
 
-  updateBlog
+  updateLead
 
 );
 
 
-// DELETE BLOG
+// DELETE LEAD
 router.delete(
 
   '/:id',
@@ -82,7 +72,7 @@ router.delete(
 
   isAdmin,
 
-  deleteBlog
+  deleteLead
 
 );
 

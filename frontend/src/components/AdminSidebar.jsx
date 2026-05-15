@@ -40,11 +40,32 @@ const AdminSidebar = () => {
     },
   ];
 
-  const handleLogout = async () => {
+  const handleLogout =
+    async () => {
 
-  await supabase.auth.signOut();
+    try {
 
-  navigate("/admin");
+      // SIGN OUT
+      await supabase.auth
+        .signOut();
+
+      // CLEAR STORAGE
+      localStorage.clear();
+
+      sessionStorage.clear();
+
+      // REDIRECT
+      window.location.href =
+        "/login";
+
+    }
+
+    catch (error) {
+
+      console.log(error);
+
+    }
+
   };
 
   return (
