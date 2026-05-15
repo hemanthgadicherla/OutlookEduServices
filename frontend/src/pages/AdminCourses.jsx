@@ -68,7 +68,7 @@ const AdminCourses = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 
@@ -213,7 +213,7 @@ const AdminCourses = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
       alert(
         "Something went wrong"
@@ -300,7 +300,7 @@ const AdminCourses = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 

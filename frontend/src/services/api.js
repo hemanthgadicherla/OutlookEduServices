@@ -375,9 +375,7 @@ export const dashboardAPI = {
 
       const response =
         await fetch(
-
-          'http://localhost:5000/api/dashboard'
-
+          `${API_BASE_URL}/dashboard`
         );
 
       return await response.json();
@@ -386,7 +384,7 @@ export const dashboardAPI = {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
       return {
 

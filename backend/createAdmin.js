@@ -50,7 +50,7 @@ async function createAdmin() {
 
     if (error) {
 
-      console.log(error);
+      console.error(error);
 
       return;
 
@@ -59,14 +59,13 @@ async function createAdmin() {
     console.log(
       'Admin created successfully'
     );
-
     console.log(data);
 
   }
 
   catch (error) {
 
-    console.log(error);
+    console.error(error);
 
   }
 

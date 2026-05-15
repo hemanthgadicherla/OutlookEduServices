@@ -60,7 +60,7 @@ const AdminRegistrations = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 
@@ -101,7 +101,7 @@ const AdminRegistrations = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 
@@ -143,7 +143,7 @@ const AdminRegistrations = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 

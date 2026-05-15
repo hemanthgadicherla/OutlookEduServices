@@ -80,7 +80,7 @@ const Login = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
       navigate('/');
 
@@ -187,7 +187,7 @@ const Login = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 
@@ -208,10 +208,6 @@ const Login = () => {
 
   try {
 
-    console.log(
-      "Google login started"
-    );
-
     const {
 
       data,
@@ -227,32 +223,16 @@ const Login = () => {
         options: {
 
           redirectTo:
-            'http://localhost:5173'
+            window.location.origin
 
         }
 
       });
 
-
-    console.log(
-      "OAuth response:",
-      data
-    );
-
-    console.log(
-      "OAuth error:",
-      error
-    );
-
   }
 
   catch (error) {
-
-    console.log(
-      "Google login catch error:",
-      error
-    );
-
+    console.error(error);
   }
 
 };
@@ -280,7 +260,7 @@ const handleLogout =
 
   catch (error) {
 
-    console.log(error);
+    console.error(error);
 
   }
 

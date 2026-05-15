@@ -89,7 +89,7 @@ const AdminBlogs = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 
@@ -274,7 +274,7 @@ const AdminBlogs = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
       alert(
         "Something went wrong"
@@ -374,7 +374,7 @@ const AdminBlogs = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 

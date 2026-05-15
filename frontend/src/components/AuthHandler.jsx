@@ -3,7 +3,6 @@ import {
 } from "react";
 
 import {
-  useLocation,
   useNavigate
 } from "react-router-dom";
 
@@ -20,10 +19,6 @@ const AuthHandler = () => {
 
   const navigate =
     useNavigate();
-
-  const location =
-    useLocation();
-
 
   useEffect(() => {
 
@@ -109,7 +104,7 @@ const AuthHandler = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 

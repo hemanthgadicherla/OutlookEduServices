@@ -68,7 +68,7 @@ const Registration = () => {
 
   if (error) {
 
-    console.log(error);
+    console.error(error);
 
     toast.error("Registration failed");
 

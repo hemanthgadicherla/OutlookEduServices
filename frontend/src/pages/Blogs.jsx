@@ -28,8 +28,6 @@ const fetchBlogs = async () => {
     const response =
       await blogAPI.getBlogs();
 
-    console.log(response.data);
-
     if (response.success) {
 
       setBlogs(response.data);

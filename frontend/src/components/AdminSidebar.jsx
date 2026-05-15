@@ -1,13 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabase";
 
 const AdminSidebar = () => {
 
   const location = useLocation();
-
-  const navigate = useNavigate();
 
   const menuItems = [
     {
@@ -62,7 +59,7 @@ const AdminSidebar = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 

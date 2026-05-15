@@ -54,7 +54,7 @@ const AdminLeads = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 
@@ -96,7 +96,7 @@ const AdminLeads = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 
@@ -136,7 +136,7 @@ const AdminLeads = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 

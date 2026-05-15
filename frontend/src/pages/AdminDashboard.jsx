@@ -70,7 +70,6 @@ const AdminDashboard = () => {
       const response =
         await dashboardAPI
           .getStats();
-      console.log(response);
 
       if (response.success) {
 
@@ -84,7 +83,7 @@ const AdminDashboard = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 

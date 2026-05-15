@@ -56,7 +56,7 @@ const AdminSubscribers = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 
@@ -104,7 +104,7 @@ const AdminSubscribers = () => {
 
     catch (error) {
 
-      console.log(error);
+      console.error(error);
 
     }
 
