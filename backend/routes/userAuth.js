@@ -1,24 +1,35 @@
-const express =
-  require('express');
-
-const router =
-  express.Router();
+const express = require('express');
+const router = express.Router();
+const loginLimiter = require('../middleware/loginLimiter');
+const { verifyToken } = require('../middleware/authMiddleware');
 
 const {
-
+  login,
+  register,
+  googleOAuthUrl,
+  googleOAuthCallback,
+  logout,
+  getMe,
+  updateMe,
   checkUserAccess
+} = require('../controllers/userAuth');
 
-} = require(
-  '../controllers/userAuth'
-);
+// EMAIL / PASSWORD
+router.post('/login', loginLimiter, login);
+router.post('/register', register);
 
+// GOOGLE OAUTH
+router.get('/google', googleOAuthUrl);
+router.get('/google/callback', googleOAuthCallback);
 
-// CHECK ACCESS
-router.post(
-  '/check-access',
-  checkUserAccess
-);
+// LOGOUT
+router.post('/logout', logout);
 
+// CURRENT USER (protected)
+router.get('/me', verifyToken, getMe);
+router.put('/me', verifyToken, updateMe);
 
-module.exports =
-  router;
+// LEGACY
+router.post('/check-access', checkUserAccess);
+
+module.exports = router;

@@ -287,6 +287,21 @@ export const uploadAPI = {
 // REGISTRATION API
 export const registrationAPI = {
 
+  // CREATE
+  createRegistration: async (data) => {
+    // attach user token if logged in (links registration to user account)
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/registrations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
+  },
+
   // GET
   getRegistrations: async () => {
 
@@ -567,36 +582,79 @@ export const leadAPI = {
 
 export const userAuthAPI = {
 
-  checkAccess: async (
-    userData
-  ) => {
-
-    const response =
-      await fetch(
-
-        `${API_BASE_URL}/user-auth/check-access`,
-
-        {
-
-          method: 'POST',
-
-          headers: {
-
-            'Content-Type':
-              'application/json'
-
-          },
-
-          body: JSON.stringify(
-            userData
-          )
-
-        }
-
-      );
-
+  // EMAIL / PASSWORD LOGIN
+  login: async (email, password) => {
+    const response = await fetch(`${API_BASE_URL}/user-auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
     return await response.json();
+  },
 
+  // REGISTER (email, password, full_name, phone)
+  register: async (email, password, full_name, phone) => {
+    const response = await fetch(`${API_BASE_URL}/user-auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, full_name, phone })
+    });
+    return await response.json();
+  },
+
+  // GOOGLE OAUTH — get redirect URL from backend
+  getGoogleOAuthUrl: async () => {
+    const response = await fetch(`${API_BASE_URL}/user-auth/google`);
+    return await response.json();
+  },
+
+  // GET CURRENT USER (from JWT)
+  getMe: async () => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/user-auth/me`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      }
+    });
+    return await response.json();
+  },
+
+  // UPDATE CURRENT USER
+  updateMe: async (data) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/user-auth/me`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
+  },
+
+  // LOGOUT
+  logout: async () => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/user-auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      }
+    });
+    return await response.json();
+  },
+
+  // LEGACY
+  checkAccess: async (userData) => {
+    const response = await fetch(`${API_BASE_URL}/user-auth/check-access`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
+    return await response.json();
   }
 
 };
@@ -616,6 +674,31 @@ export const lmsAPI = {
 
     return await response.json();
 
+  }
+
+};
+
+// PAYMENT API
+export const paymentAPI = {
+
+  // CREATE RAZORPAY ORDER
+  createOrder: async (amount, registrationId) => {
+    const response = await fetch(`${API_BASE_URL}/payments/create-order`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ amount, registrationId })
+    });
+    return await response.json();
+  },
+
+  // VERIFY PAYMENT
+  verifyPayment: async (paymentData) => {
+    const response = await fetch(`${API_BASE_URL}/payments/verify`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(paymentData)
+    });
+    return await response.json();
   }
 
 };

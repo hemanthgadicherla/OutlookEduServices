@@ -15,15 +15,21 @@ const registrationSchema = Joi.object({
     .email()
     .required(),
 
+  course_id: Joi.number()
+    .integer()
+    .optional(),
+
   selected_course: Joi.string()
     .required(),
 
   country: Joi.string()
-    .optional(),
+    .optional()
+    .allow(''),
 
   message: Joi.string()
     .max(500)
     .optional()
+    .allow('')
 });
 
 
@@ -107,12 +113,15 @@ const createRegistration = async (
 
         phone: value.phone,
 
+        course_id:
+          value.course_id || null,
+
         selected_course:
           value.selected_course,
 
-        country: value.country,
+        country: value.country || null,
 
-        message: value.message,
+        message: value.message || null,
 
         payment_status: 'pending',
 

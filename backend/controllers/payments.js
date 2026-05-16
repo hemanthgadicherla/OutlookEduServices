@@ -99,7 +99,7 @@ const verifyPayment = async (req, res) => {
     // Update registration payment status
     const { error: regError } = await supabase
       .from('registrations')
-      .update({ payment_status: 'completed' })
+      .update({ payment_status: 'paid', payment_id: razorpay_payment_id })
       .eq('id', registrationId);
 
     if (regError) {

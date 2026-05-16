@@ -37,6 +37,8 @@ import AdminLeads from "./pages/AdminLeads";
 import AdminRegistrations from "./pages/AdminRegistrations";
 import AdminSubscribers from "./pages/AdminSubscribers";
 import LMSDashboard from "./pages/LMSDashboard";
+import AuthCallback from "./pages/AuthCallback";
+import Account from "./pages/Account";
 
 function App() {
 
@@ -122,6 +124,10 @@ function App() {
           <Route path="/registration" element={<Registration />} />
 
           <Route path="/lms" element={<LMSDashboard />} />
+
+          <Route path="/account" element={<Account />} />
+
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           
 
