@@ -1,11 +1,12 @@
 const supabase = require('../config/supabase');
+const { supabaseAnon } = require('../config/supabase');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 
 
-// =========================
+// ================================================================
 // HELPERS
-// =========================
+// ================================================================
 
 const resolveAccess = async (userId) => {
   const { data: paidCourses } = await supabase
@@ -21,6 +22,7 @@ const resolveAccess = async (userId) => {
 };
 
 const upsertUser = async (id, email, full_name, phone = null) => {
+  // Try to find existing row by id first
   let { data: user } = await supabase
     .from('users')
     .select('*')
@@ -28,8 +30,27 @@ const upsertUser = async (id, email, full_name, phone = null) => {
     .maybeSingle();
 
   if (!user) {
-    const insertData = { id, email, full_name: full_name || '', role: 'user' };
-    if (phone) insertData.phone = phone;
+    // Check if the phone is already taken by a different user — if so, drop it
+    // to avoid a unique constraint violation. The user can update their phone later.
+    let safePhone = phone;
+    if (safePhone) {
+      const { data: phoneOwner } = await supabase
+        .from('users')
+        .select('id')
+        .eq('phone', safePhone)
+        .maybeSingle();
+      if (phoneOwner && phoneOwner.id !== id) {
+        safePhone = null; // phone belongs to someone else — don't copy it
+      }
+    }
+
+    const insertData = {
+      id,
+      email,
+      full_name: full_name || '',
+      role: 'user',
+      ...(safePhone ? { phone: safePhone } : {})
+    };
 
     const { data: newUser, error } = await supabase
       .from('users')
@@ -38,11 +59,22 @@ const upsertUser = async (id, email, full_name, phone = null) => {
       .single();
 
     if (error) {
-      console.error('upsertUser insert error:', error);
+      // Last-resort: another request may have inserted the row between our
+      // SELECT and INSERT (race condition). Try fetching again before giving up.
+      if (error.code === '23505') {
+        const { data: raceUser } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (raceUser) return raceUser;
+      }
+      console.error('upsertUser insert error:', error.message);
       throw new Error(`Failed to create user record: ${error.message}`);
     }
     user = newUser;
   } else if (phone && !user.phone) {
+    // Row exists but has no phone — try to set it, ignore if already taken
     const { data: updated } = await supabase
       .from('users')
       .update({ phone })
@@ -55,35 +87,52 @@ const upsertUser = async (id, email, full_name, phone = null) => {
   return user;
 };
 
-// Include full_name in JWT so Navbar can display it without an extra API call
+// full_name included so Navbar can read it from JWT without an API call
 const signToken = (user) =>
   jwt.sign(
-    { id: user.id, email: user.email, role: user.role, full_name: user.full_name || '' },
+    {
+      id:        user.id,
+      email:     user.email,
+      role:      user.role,
+      full_name: user.full_name || ''
+    },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES || '7d' }
   );
 
 
-// =========================
-// EMAIL / PASSWORD LOGIN
-// =========================
+// ================================================================
+// LOGIN
+// ================================================================
 const login = async (req, res) => {
   let { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required' });
+    return res.status(400).json({
+      success: false,
+      message: 'Email and password are required'
+    });
   }
 
   email = email.trim().toLowerCase();
 
   if (!validator.isEmail(email)) {
-    return res.status(400).json({ success: false, message: 'Invalid email format' });
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid email format'
+    });
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabaseAnon.auth.signInWithPassword({
+    email,
+    password
+  });
 
   if (error || !data?.user) {
-    return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid email or password'
+    });
   }
 
   const supaUser = data.user;
@@ -95,14 +144,22 @@ const login = async (req, res) => {
 
   const user = await upsertUser(supaUser.id, supaUser.email, full_name, phone);
 
-  await supabase
+  // fire-and-forget last_login update
+  supabase
     .from('users')
     .update({ last_login: new Date().toISOString() })
-    .eq('id', user.id);
+    .eq('id', user.id)
+    .then(() => {})
+    .catch(() => {});
 
   if (user.role === 'admin') {
     const token = signToken(user);
-    return res.json({ success: true, token, role: 'admin', redirect: '/admin/dashboard' });
+    return res.json({
+      success: true,
+      token,
+      role: 'admin',
+      redirect: '/admin/dashboard'
+    });
   }
 
   const { role, redirect } = await resolveAccess(user.id);
@@ -112,32 +169,56 @@ const login = async (req, res) => {
 };
 
 
-// =========================
+// ================================================================
 // REGISTER
-// =========================
+// ================================================================
 const register = async (req, res) => {
   let { email, password, full_name, phone } = req.body;
 
-  if (!email || !password || !full_name || !phone) {
-    return res.status(400).json({ success: false, message: 'Name, email, phone and password are required' });
+  // ── field presence ──────────────────────────────────────────
+  const missing = [];
+  if (!full_name) missing.push('full name');
+  if (!email)     missing.push('email');
+  if (!phone)     missing.push('phone number');
+  if (!password)  missing.push('password');
+
+  if (missing.length) {
+    return res.status(400).json({
+      success: false,
+      message: `Please provide: ${missing.join(', ')}`
+    });
   }
 
-  email = email.trim().toLowerCase();
+  // ── sanitise ────────────────────────────────────────────────
+  email     = email.trim().toLowerCase();
   full_name = full_name.trim();
-  phone = phone.trim();
+  phone     = phone.trim();
 
+  // ── email format ────────────────────────────────────────────
   if (!validator.isEmail(email)) {
-    return res.status(400).json({ success: false, message: 'Invalid email format' });
+    return res.status(400).json({
+      success: false,
+      message: 'Please enter a valid email address'
+    });
   }
 
+  // ── phone format (10-digit Indian mobile) ───────────────────
   if (!/^[6-9]\d{9}$/.test(phone)) {
-    return res.status(400).json({ success: false, message: 'Enter a valid 10-digit Indian phone number' });
+    return res.status(400).json({
+      success: false,
+      message: 'Phone must be a valid 10-digit Indian mobile number (starts with 6–9)'
+    });
   }
 
+  // ── password length ─────────────────────────────────────────
   if (password.length < 6) {
-    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 6 characters'
+    });
   }
 
+  // ── phone uniqueness ────────────────────────────────────────
   const { data: existingPhone } = await supabase
     .from('users')
     .select('id')
@@ -145,9 +226,13 @@ const register = async (req, res) => {
     .maybeSingle();
 
   if (existingPhone) {
-    return res.status(400).json({ success: false, message: 'Phone number already in use' });
+    return res.status(400).json({
+      success: false,
+      message: 'This phone number is already registered'
+    });
   }
 
+  // ── create Supabase Auth user ────────────────────────────────
   const { data, error } = await supabase.auth.admin.createUser({
     email,
     password,
@@ -156,26 +241,46 @@ const register = async (req, res) => {
   });
 
   if (error) {
-    const msg =
-      error.message?.toLowerCase().includes('already registered') ||
-      error.message?.toLowerCase().includes('already exists')
-        ? 'Email already in use'
-        : 'Registration failed. Please try again.';
-    return res.status(400).json({ success: false, message: msg });
+    console.error('Supabase createUser error:', error.message);
+
+    // map known Supabase error messages to user-friendly ones
+    const msg = error.message?.toLowerCase();
+    if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('duplicate')) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists. Please log in instead.'
+      });
+    }
+    if (msg.includes('password')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password does not meet requirements. Use at least 6 characters.'
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: 'Registration failed. Please try again.'
+    });
   }
 
+  // ── create users table row ───────────────────────────────────
   const user = await upsertUser(data.user.id, email, full_name, phone);
   const token = signToken(user);
 
-  return res.status(201).json({ success: true, token, role: user.role, redirect: '/' });
+  return res.status(201).json({
+    success: true,
+    token,
+    role: user.role,
+    redirect: '/'
+  });
 };
 
 
-// =========================
+// ================================================================
 // GOOGLE OAUTH — INITIATE
-// =========================
+// ================================================================
 const googleOAuthUrl = async (req, res) => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await supabaseAnon.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/user-auth/google/callback`
@@ -183,16 +288,19 @@ const googleOAuthUrl = async (req, res) => {
   });
 
   if (error || !data?.url) {
-    return res.status(500).json({ success: false, message: 'Failed to generate OAuth URL' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate Google login URL'
+    });
   }
 
   return res.json({ success: true, url: data.url });
 };
 
 
-// =========================
+// ================================================================
 // GOOGLE OAUTH — CALLBACK
-// =========================
+// ================================================================
 const googleOAuthCallback = async (req, res) => {
   const { code } = req.query;
 
@@ -200,7 +308,7 @@ const googleOAuthCallback = async (req, res) => {
     return res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
   }
 
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabaseAnon.auth.exchangeCodeForSession(code);
 
   if (error || !data?.user) {
     return res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
@@ -214,10 +322,12 @@ const googleOAuthCallback = async (req, res) => {
 
   const user = await upsertUser(supaUser.id, supaUser.email, full_name);
 
-  await supabase
+  supabase
     .from('users')
     .update({ last_login: new Date().toISOString() })
-    .eq('id', user.id);
+    .eq('id', user.id)
+    .then(() => {})
+    .catch(() => {});
 
   let role = user.role;
   let redirect = '/admin/dashboard';
@@ -236,17 +346,17 @@ const googleOAuthCallback = async (req, res) => {
 };
 
 
-// =========================
+// ================================================================
 // LOGOUT
-// =========================
+// ================================================================
 const logout = async (req, res) => {
   return res.json({ success: true, message: 'Logged out' });
 };
 
 
-// =========================
+// ================================================================
 // GET CURRENT USER
-// =========================
+// ================================================================
 const getMe = async (req, res) => {
   const { data: user } = await supabase
     .from('users')
@@ -255,30 +365,41 @@ const getMe = async (req, res) => {
     .maybeSingle();
 
   if (!user) {
-    return res.status(404).json({ success: false, message: 'User not found' });
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
   }
 
   return res.json({ success: true, user });
 };
 
 
-// =========================
+// ================================================================
 // UPDATE CURRENT USER
-// =========================
+// ================================================================
 const updateMe = async (req, res) => {
   const { full_name, phone } = req.body;
 
   if (!full_name && !phone) {
-    return res.status(400).json({ success: false, message: 'Nothing to update' });
+    return res.status(400).json({
+      success: false,
+      message: 'Nothing to update'
+    });
   }
 
   const updates = {};
 
-  if (full_name) updates.full_name = full_name.trim();
+  if (full_name) {
+    updates.full_name = full_name.trim();
+  }
 
   if (phone) {
     if (!/^[6-9]\d{9}$/.test(phone.trim())) {
-      return res.status(400).json({ success: false, message: 'Enter a valid 10-digit Indian phone number' });
+      return res.status(400).json({
+        success: false,
+        message: 'Phone must be a valid 10-digit Indian mobile number'
+      });
     }
     const { data: existing } = await supabase
       .from('users')
@@ -286,8 +407,12 @@ const updateMe = async (req, res) => {
       .eq('phone', phone.trim())
       .neq('id', req.user.id)
       .maybeSingle();
+
     if (existing) {
-      return res.status(400).json({ success: false, message: 'Phone number already in use' });
+      return res.status(400).json({
+        success: false,
+        message: 'This phone number is already registered to another account'
+      });
     }
     updates.phone = phone.trim();
   }
@@ -300,27 +425,38 @@ const updateMe = async (req, res) => {
     .single();
 
   if (error) {
-    return res.status(500).json({ success: false, message: 'Failed to update profile' });
+    console.error('updateMe error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update profile. Please try again.'
+    });
   }
 
   return res.json({ success: true, user });
 };
 
 
-// =========================
+// ================================================================
 // LEGACY — CHECK ACCESS
-// =========================
+// ================================================================
 const checkUserAccess = async (req, res) => {
   const { id, email, full_name } = req.body;
 
   if (!email || !id) {
-    return res.status(400).json({ success: false, message: 'User data required' });
+    return res.status(400).json({
+      success: false,
+      message: 'User data required'
+    });
   }
 
   const user = await upsertUser(id, email, full_name || '');
 
   if (user.role === 'admin') {
-    return res.json({ success: true, role: 'admin', redirect: '/admin/dashboard' });
+    return res.json({
+      success: true,
+      role: 'admin',
+      redirect: '/admin/dashboard'
+    });
   }
 
   const { role, redirect } = await resolveAccess(user.id);

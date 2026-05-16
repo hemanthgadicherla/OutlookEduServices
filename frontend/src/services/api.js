@@ -1,7 +1,6 @@
 const API_BASE_URL =
-
   import.meta.env.VITE_API_URL ||
-
+  import.meta.env.VITE_API_BASE_URL ||
   'http://localhost:5000/api';
 
 
@@ -678,9 +677,45 @@ export const lmsAPI = {
 
 };
 
+// ADMIN AUTH API
+export const adminAuthAPI = {
+
+  // ADMIN LOGIN
+  login: async (email, password) => {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    return await response.json();
+  },
+
+  // ADMIN SIGNUP
+  signup: async (email, password, full_name, phone, secret_key) => {
+    const response = await fetch(`${API_BASE_URL}/auth/admin-signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, full_name, phone, secret_key })
+    });
+    return await response.json();
+  },
+
+  // VERIFY TOKEN
+  verify: async () => {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      }
+    });
+    return await response.json();
+  }
+
+};
+
 // PAYMENT API
 export const paymentAPI = {
-
   // CREATE RAZORPAY ORDER
   createOrder: async (amount, registrationId) => {
     const response = await fetch(`${API_BASE_URL}/payments/create-order`, {

@@ -183,7 +183,7 @@ const LeadPopup = () => {
               style={{
                 background: "#ffffff",
                 border: "1px solid rgba(255,215,0,0.2)",
-                color: "white",
+                color: "black",
                 borderRadius: "10px",
                 padding: "12px"
               }}
@@ -203,7 +203,7 @@ const LeadPopup = () => {
               style={{
                 background: "#ffffff",
                 border: "1px solid rgba(255,215,0,0.2)",
-                color: "white",
+                color: "black",
                 borderRadius: "10px",
                 padding: "12px"
               }}

@@ -135,7 +135,7 @@ const Account = () => {
                 <Link to="/lms" className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-2">
                   <FaBookOpen size={13} /> My Courses
                 </Link>
-                <Link to="/registration" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center gap-2">
+                <Link to="/course_registration" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center gap-2">
                   <FaUser size={13} /> Course Registration
                 </Link>
                 <button

@@ -1,29 +1,17 @@
 const express = require('express');
+const router  = express.Router();
 
-const router = express.Router();
+const { login, adminSignup, verifyAdmin } = require('../controllers/auth');
+const loginLimiter  = require('../middleware/loginLimiter');
+const { verifyToken } = require('../middleware/authMiddleware');
 
-const {
-  login,
-  verifyAdmin
-} = require('../controllers/auth');
+// Admin login — rate limited
+router.post('/login',        loginLimiter, login);
 
-const loginLimiter =
-  require('../middleware/loginLimiter');
+// Admin signup — protected by secret key in body
+router.post('/admin-signup', adminSignup);
 
-const {
-  verifyToken
-} = require('../middleware/authMiddleware');
-
-router.post(
-  '/login',
-  loginLimiter,
-  login
-);
-
-router.get(
-  '/verify',
-  verifyToken,
-  verifyAdmin
-);
+// Verify token is still valid + is admin
+router.get('/verify',        verifyToken, verifyAdmin);
 
 module.exports = router;

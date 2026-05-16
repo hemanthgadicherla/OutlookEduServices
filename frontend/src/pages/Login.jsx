@@ -1,37 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { userAuthAPI } from '../services/api';
+import { getUser } from '../utils/auth';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [searchParams] = useSearchParams();
+
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
 
-  // =========================
-  // HANDLE OAUTH CALLBACK
-  // After Google redirect, backend sends ?token=&role=&redirect=
-  // =========================
+  // Already logged in → redirect away
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const role = params.get('role');
-    const redirect = params.get('redirect');
-
-    if (token) {
-      localStorage.setItem('userToken', token);
-      if (role === 'admin') localStorage.setItem('adminToken', token);
-      navigate(redirect || '/');
+    if (getUser()) {
+      const redirect = searchParams.get('redirect') || '/';
+      navigate(decodeURIComponent(redirect), { replace: true });
     }
-
-    const oauthError = params.get('error');
-    if (oauthError) setError('Google login failed. Please try again.');
   }, []);
 
-  // =========================
-  // EMAIL LOGIN
-  // =========================
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -48,7 +36,13 @@ const Login = () => {
       localStorage.setItem('userToken', response.token);
       if (response.role === 'admin') localStorage.setItem('adminToken', response.token);
 
-      navigate(response.redirect || '/');
+      // honour ?redirect= param (e.g. from course enroll button)
+      const redirectTo = searchParams.get('redirect');
+      if (redirectTo) {
+        navigate(decodeURIComponent(redirectTo), { replace: true });
+      } else {
+        navigate(response.redirect || '/', { replace: true });
+      }
     } catch (err) {
       console.error(err);
       setError('Something went wrong. Please try again.');
@@ -57,95 +51,64 @@ const Login = () => {
     }
   };
 
-  // =========================
-  // GOOGLE LOGIN
-  // Backend returns the OAuth URL; we redirect the browser to it.
-  // =========================
-  const handleGoogleLogin = async () => {
-    try {
-      const response = await userAuthAPI.getGoogleOAuthUrl();
-      if (response.success && response.url) {
-        window.location.href = response.url;
-      } else {
-        setError('Could not initiate Google login. Please try again.');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Something went wrong. Please try again.');
-    }
-  };
-
   return (
-    <div className="container py-5">
-      <div className="row justify-content-center">
-        <div className="col-md-5">
-          <div className="card shadow border-0 p-4">
-            <h2 className="text-center mb-4">Login</h2>
+    <div className="min-vh-100 d-flex align-items-center bg-light py-5">
+      <div className="container">
+        <div className="row justify-content-center">
+          <div className="col-lg-4 col-md-6">
+            <div className="card shadow border-0 p-4">
 
-            {error && (
-              <div className="alert alert-danger py-2" role="alert">
-                {error}
-              </div>
-            )}
-
-            {/* EMAIL LOGIN */}
-            <form onSubmit={handleLogin}>
-              <div className="mb-3">
-                <label htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  className="form-control"
-                  placeholder="Enter email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
+              <div className="text-center mb-4">
+                <h2 className="fw-bold mb-1">Welcome Back</h2>
+                <p className="text-muted small">Log in to your account</p>
               </div>
 
-              <div className="mb-3">
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  className="form-control"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-              </div>
+              {error && (
+                <div className="alert alert-danger py-2 small" role="alert">
+                  {error}
+                </div>
+              )}
 
-              <button
-                type="submit"
-                className="btn btn-primary w-100"
-                disabled={loading}
-              >
-                {loading ? 'Logging in...' : 'Login'}
-              </button>
-            </form>
+              <form onSubmit={handleLogin} noValidate>
+                <div className="mb-3">
+                  <label htmlFor="email" className="form-label fw-semibold">Email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    className="form-control"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
 
-            {/* DIVIDER */}
-            <div className="text-center my-3">
-              <span className="text-muted">OR</span>
+                <div className="mb-4">
+                  <label htmlFor="password" className="form-label fw-semibold">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    className="form-control"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                  />
+                </div>
+
+                <button type="submit" className="btn btn-primary w-100 py-2" disabled={loading}>
+                  {loading ? 'Logging in...' : 'Login'}
+                </button>
+              </form>
+
+              <p className="text-center text-muted small mt-4 mb-0">
+                Don't have an account?{' '}
+                <Link to="/registration" className="fw-semibold text-decoration-none">Register</Link>
+              </p>
+
             </div>
-
-            {/* GOOGLE LOGIN */}
-            <button
-              type="button"
-              className="btn btn-danger w-100"
-              onClick={handleGoogleLogin}
-            >
-              Continue with Google
-            </button>
-
-            {/* REGISTER */}
-            <p className="text-center mt-3">
-              Don't have an account?{' '}
-              <Link to="/registration">Register</Link>
-            </p>
           </div>
         </div>
       </div>

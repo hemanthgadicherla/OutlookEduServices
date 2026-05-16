@@ -27,7 +27,6 @@ DROP TABLE IF EXISTS blog_subscribers  CASCADE;
 DROP TABLE IF EXISTS leads             CASCADE;
 DROP TABLE IF EXISTS blogs             CASCADE;
 DROP TABLE IF EXISTS courses           CASCADE;
-DROP TABLE IF EXISTS admins            CASCADE;
 DROP TABLE IF EXISTS users             CASCADE;
 
 DROP TYPE IF EXISTS user_role            CASCADE;
@@ -119,20 +118,6 @@ ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 
 CREATE INDEX idx_users_role      ON users (role);
 CREATE INDEX idx_users_is_active ON users (is_active);
-
-
--- ----------------------------------------------------------------
--- ADMINS
--- Separate table for admin portal (bcrypt password auth).
--- Intentionally decoupled from users — admin auth is independent.
--- ----------------------------------------------------------------
-CREATE TABLE admins (
-  id         SERIAL       PRIMARY KEY,
-  email      VARCHAR(255) NOT NULL UNIQUE,
-  password   VARCHAR(255) NOT NULL,          -- bcrypt hash, never plaintext
-  role       VARCHAR(20)  NOT NULL DEFAULT 'admin',
-  created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-);
 
 
 -- ----------------------------------------------------------------
@@ -432,11 +417,11 @@ CREATE INDEX idx_blogs_published   ON blogs (is_published);
 
 -- ----------------------------------------------------------------
 -- LEADS
--- source   = where the lead came from (ENUM).
--- assigned_to = admin counsellor handling this lead.
+-- source      = where the lead came from (ENUM).
+-- assigned_to = admin user (UUID) handling this lead.
 -- ----------------------------------------------------------------
 CREATE TABLE leads (
-  id          SERIAL      PRIMARY KEY,
+  id          SERIAL       PRIMARY KEY,
   name        VARCHAR(100) NOT NULL,
   email       VARCHAR(255),
   phone       VARCHAR(15)  NOT NULL,
@@ -444,7 +429,7 @@ CREATE TABLE leads (
   message     TEXT,
   source      lead_source  NOT NULL DEFAULT 'other',
   contacted   BOOLEAN      NOT NULL DEFAULT FALSE,
-  assigned_to INTEGER      REFERENCES admins(id) ON DELETE SET NULL,
+  assigned_to UUID         REFERENCES users(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
@@ -488,7 +473,7 @@ CREATE INDEX idx_notifications_is_read ON notifications (user_id, is_read);
 -- ----------------------------------------------------------------
 CREATE TABLE audit_logs (
   id          SERIAL       PRIMARY KEY,
-  admin_id    INTEGER      REFERENCES admins(id) ON DELETE SET NULL,
+  admin_id    UUID         REFERENCES users(id) ON DELETE SET NULL,
   action      VARCHAR(50)  NOT NULL,   -- e.g. 'UPDATE', 'DELETE', 'LOGIN'
   table_name  VARCHAR(100),
   record_id   TEXT,                    -- TEXT to handle both INT and UUID PKs

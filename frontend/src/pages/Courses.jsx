@@ -19,10 +19,10 @@ const Courses = () => {
 
   const handleEnroll = (courseId) => {
     if (!isLoggedIn()) {
-      navigate('/login', { state: { from: `/registration?course=${courseId}` } });
+      navigate(`/login?redirect=${encodeURIComponent(`/course_registration?course=${courseId}`)}`);
       return;
     }
-    navigate(`/registration?course=${courseId}`);
+    navigate(`/course_registration?course=${courseId}`);
   };
 
   return (

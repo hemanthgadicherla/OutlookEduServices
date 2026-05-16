@@ -1,137 +1,21 @@
-import React, {
-  useEffect,
-  useState
-} from "react";
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { getUser } from '../utils/auth';
 
-import {
-  Navigate
-} from "react-router-dom";
+// Reads the JWT from localStorage — no API call needed.
+// Redirects to /admin/login if token is missing, expired, or not admin role.
+const AdminProtectedRoute = ({ children }) => {
+  const user = getUser(); // { id, email, role, full_name } or null
 
-import {
-  supabase
-} from "../services/supabase";
-
-import {
-  userAuthAPI
-} from "../services/api";
-
-
-const AdminProtectedRoute = ({
-  children
-}) => {
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [isAdmin, setIsAdmin] =
-    useState(false);
-
-
-  useEffect(() => {
-
-    checkAdmin();
-
-  }, []);
-
-
-  const checkAdmin =
-    async () => {
-
-    try {
-
-      // GET SESSION
-      const {
-
-        data: { session }
-
-      } = await supabase.auth
-        .getSession();
-
-
-      if (!session) {
-
-        setLoading(false);
-
-        return;
-
-      }
-
-
-      const user =
-        session.user;
-
-
-      // CHECK ACCESS
-      const response =
-        await userAuthAPI
-          .checkAccess({
-
-            id: user.id,
-
-            email: user.email,
-
-            full_name:
-
-              user.user_metadata
-                ?.full_name ||
-
-              user.user_metadata
-                ?.name ||
-
-              ''
-
-          });
-
-
-      // ADMIN CHECK
-      if (
-        response.role ===
-        'admin'
-      ) {
-
-        setIsAdmin(true);
-
-      }
-
-    }
-
-    catch (error) {
-
-      console.error(error);
-
-    }
-
-    finally {
-
-      setLoading(false);
-
-    }
-
-  };
-
-
-  if (loading) {
-
-    return (
-
-      <h3 className="text-center py-5">
-
-        Loading...
-
-      </h3>
-
-    );
-
+  if (!user) {
+    return <Navigate to="/admin/login" replace />;
   }
 
+  if (user.role !== 'admin') {
+    return <Navigate to="/admin/login" replace />;
+  }
 
-  return isAdmin
-
-    ? children
-
-    : <Navigate to="/login" />;
-
+  return children;
 };
 
-export default
-  AdminProtectedRoute;
+export default AdminProtectedRoute;
