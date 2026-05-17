@@ -667,25 +667,34 @@ export const adminAuthAPI = {
 };
 
 // PAYMENT API
+// Uses userToken (not adminToken) — payment routes require user auth
 export const paymentAPI = {
   // CREATE RAZORPAY ORDER
-  createOrder: async (amount, registrationId) => {
+  // Amount is determined server-side from DB — only registrationId needed
+  createOrder: async (registrationId) => {
+    const token = localStorage.getItem('userToken');
     const response = await fetch(`${API_BASE_URL}/payments/create-order`, {
       method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ amount, registrationId })
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      },
+      body: JSON.stringify({ registrationId })
     });
     return await response.json();
   },
 
   // VERIFY PAYMENT
   verifyPayment: async (paymentData) => {
+    const token = localStorage.getItem('userToken');
     const response = await fetch(`${API_BASE_URL}/payments/verify`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      },
       body: JSON.stringify(paymentData)
     });
     return await response.json();
   }
-
 };

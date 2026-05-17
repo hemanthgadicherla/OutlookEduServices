@@ -42,18 +42,38 @@ const createRegistration = async (
     // Normalize Email
     value.email = value.email.trim().toLowerCase();
 
-    // Check Duplicate Registration
-    const { data: existingUser } = await supabase
+    // Block ONLY if this exact email + same course is already PAID
+    // Allow the same user to register for different courses freely
+    const { data: existingPaid } = await supabase
       .from('registrations')
       .select('id')
       .eq('email', value.email)
       .eq('selected_course', value.selected_course)
+      .eq('payment_status', 'paid')
       .maybeSingle();
 
-    if (existingUser) {
+    if (existingPaid) {
       return res.status(400).json({
         success: false,
-        message: 'You already registered for this course'
+        message: 'You have already enrolled in this course'
+      });
+    }
+
+    // If a pending registration exists for same email + course, reuse it
+    // so the user can retry payment without creating a duplicate row
+    const { data: existingPending } = await supabase
+      .from('registrations')
+      .select('*')
+      .eq('email', value.email)
+      .eq('selected_course', value.selected_course)
+      .eq('payment_status', 'pending')
+      .maybeSingle();
+
+    if (existingPending) {
+      return res.status(200).json({
+        success: true,
+        message: 'Registration already exists. Proceeding to payment.',
+        data: existingPending
       });
     }
 

@@ -95,6 +95,14 @@ app.use(
 // =========================
 // BODY PARSER
 // =========================
+
+// RAW BODY for Razorpay webhook signature verification
+// Must come BEFORE express.json()
+app.use(
+  '/api/payments/webhook',
+  express.raw({ type: 'application/json' })
+);
+
 app.use(
 
   express.json({
@@ -263,6 +271,11 @@ app.use(
 app.use(
   '/api/lms',
   require('./routes/lms')
+);
+
+app.use(
+  '/api/payments',
+  require('./routes/payments')
 );
 
 
