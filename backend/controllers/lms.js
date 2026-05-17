@@ -1,9 +1,9 @@
 const supabase = require('../config/supabase');
 
-// GET USER COURSES
-// Single source of truth: registrations.payment_status
-// Only shows courses where payment_status = 'paid' for this user's email.
-// Handles both course_id FK join and fallback to selected_course name match.
+// GET USER COURSES — v3
+// Source of truth: registrations.payment_status = 'paid'
+// Courses only appear in /lms when payment_status is 'paid'.
+// Changing to pending/failed removes them immediately on next load.
 const getUserCourses = async (req, res) => {
   try {
     const { user_id } = req.query;
