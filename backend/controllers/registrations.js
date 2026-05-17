@@ -330,106 +330,91 @@ const updateRegistration = async (
     // =========================
     // LMS ACCESS LOGIC
     // =========================
-    if (
-      req.body.payment_status ===
-      'paid'
-    ) {
-
-      // FIND USER
-      const {
-
-        data: user
-
-      } = await supabase
-
+    if (req.body.payment_status === 'paid') {
+      // Grant LMS access when admin marks as paid
+      const { data: user } = await supabase
         .from('users')
-
-        .select('*')
-
-        .eq(
-          'email',
-          data.email
-        )
-
-        .single();
-
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle();
 
       if (user) {
+        let courseId = data.course_id;
 
-        // FIND COURSE
-        const {
-
-          data: course
-
-        } = await supabase
-
-          .from('courses')
-
-          .select('*')
-
-          .eq(
-            'title',
-            data.selected_course
-          )
-
-          .single();
-
-
-        if (course) {
-
-          // CHECK EXISTING ACCESS
-          const {
-
-            data: existingAccess
-
-          } = await supabase
-
-            .from('user_courses')
-
-            .select('*')
-
-            .eq(
-              'user_id',
-              user.id
-            )
-
-            .eq(
-              'course_id',
-              course.id
-            )
-
-            .single();
-
-
-          // CREATE ACCESS
-          if (!existingAccess) {
-
-            await supabase
-
-              .from('user_courses')
-
-              .insert([{
-
-                user_id:
-                  user.id,
-
-                course_id:
-                  course.id,
-
-                payment_status:
-                  'paid',
-
-                created_at:
-                  new Date().toISOString()
-
-              }]);
-
-          }
-
+        if (!courseId) {
+          const { data: course } = await supabase
+            .from('courses')
+            .select('id')
+            .eq('title', data.selected_course)
+            .maybeSingle();
+          courseId = course?.id;
         }
 
-      }
+        if (courseId) {
+          // Upsert — safe to call multiple times
+          await supabase
+            .from('user_courses')
+            .upsert([{
+              user_id:        user.id,
+              course_id:      courseId,
+              payment_status: 'paid',
+              created_at:     new Date().toISOString()
+            }], { onConflict: 'user_id,course_id' });
 
+          // Upgrade role to student if still 'user'
+          await supabase
+            .from('users')
+            .update({ role: 'student' })
+            .eq('id', user.id)
+            .eq('role', 'user');
+        }
+      }
+    }
+
+    if (req.body.payment_status === 'pending' || req.body.payment_status === 'failed') {
+      // Revoke LMS access when admin marks as pending or failed
+      const { data: user } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle();
+
+      if (user) {
+        let courseId = data.course_id;
+
+        if (!courseId) {
+          const { data: course } = await supabase
+            .from('courses')
+            .select('id')
+            .eq('title', data.selected_course)
+            .maybeSingle();
+          courseId = course?.id;
+        }
+
+        if (courseId) {
+          // Remove LMS access row
+          await supabase
+            .from('user_courses')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('course_id', courseId);
+
+          // If user has no remaining paid courses, downgrade role back to 'user'
+          const { data: remainingCourses } = await supabase
+            .from('user_courses')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('payment_status', 'paid');
+
+          if (!remainingCourses || remainingCourses.length === 0) {
+            await supabase
+              .from('users')
+              .update({ role: 'user' })
+              .eq('id', user.id)
+              .eq('role', 'student');
+          }
+        }
+      }
     }
 
 

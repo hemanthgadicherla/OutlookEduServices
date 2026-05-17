@@ -611,22 +611,16 @@ export const userAuthAPI = {
 };
 
 export const lmsAPI = {
-
-  getCourses: async (
-    userId
-  ) => {
-
-    const response =
-      await fetch(
-
-        `${API_BASE_URL}/lms/courses?user_id=${userId}`
-
-      );
-
+  getCourses: async (userId) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/courses?user_id=${userId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` })
+      }
+    });
     return await response.json();
-
   }
-
 };
 
 // ADMIN AUTH API

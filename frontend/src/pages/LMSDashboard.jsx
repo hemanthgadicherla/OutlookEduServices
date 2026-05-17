@@ -60,7 +60,7 @@ const LMSDashboard = () => {
                     <h5>{course.title}</h5>
                     <p>{course.description}</p>
                     <Link to={`/lms/course/${course.id}`} className="btn btn-primary">
-                      Open Course
+                      Start Learning...
                     </Link>
                   </div>
                 </div>

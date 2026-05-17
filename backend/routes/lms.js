@@ -1,24 +1,9 @@
-const express =
-  require('express');
+const express = require('express');
+const router  = express.Router();
+const { verifyToken } = require('../middleware/authMiddleware');
+const { getUserCourses } = require('../controllers/lms');
 
-const router =
-  express.Router();
+// Protected — user must be logged in
+router.get('/courses', verifyToken, getUserCourses);
 
-const {
-
-  getUserCourses
-
-} = require(
-  '../controllers/lms'
-);
-
-
-// GET LMS COURSES
-router.get(
-  '/courses',
-  getUserCourses
-);
-
-
-module.exports =
-  router;
+module.exports = router;
