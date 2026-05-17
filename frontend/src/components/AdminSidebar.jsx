@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { logout as clearTokens, getUser } from '../utils/auth';
 import {
   FaTachometerAlt, FaClipboardList, FaBookOpen,
-  FaNewspaper, FaBullhorn, FaUsers, FaSignOutAlt
+  FaNewspaper, FaBullhorn, FaSignOutAlt
 } from 'react-icons/fa';
 
 const AdminSidebar = () => {
@@ -17,7 +17,6 @@ const AdminSidebar = () => {
     { name: 'Courses',        path: '/admin/courses',       icon: <FaBookOpen /> },
     { name: 'Blogs',          path: '/admin/blogs',         icon: <FaNewspaper /> },
     { name: 'Leads',          path: '/admin/leads',         icon: <FaBullhorn /> },
-    { name: 'Subscribers',    path: '/admin/subscribers',   icon: <FaUsers /> },
   ];
 
   const handleLogout = () => {

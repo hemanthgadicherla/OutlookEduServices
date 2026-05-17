@@ -35,7 +35,6 @@ import AdminCourses from "./pages/AdminCourses";
 import AdminBlogs from "./pages/AdminBlogs";
 import AdminLeads from "./pages/AdminLeads";
 import AdminRegistrations from "./pages/AdminRegistrations";
-import AdminSubscribers from "./pages/AdminSubscribers";
 import AdminLogin from "./pages/AdminLogin";
 import AdminSignup from "./pages/AdminSignup";
 import LMSDashboard from "./pages/LMSDashboard";
@@ -99,7 +98,6 @@ function App() {
           <Route path="/admin/blogs"         element={<AdminProtectedRoute><AdminBlogs /></AdminProtectedRoute>} />
           <Route path="/admin/leads"         element={<AdminProtectedRoute><AdminLeads /></AdminProtectedRoute>} />
           <Route path="/admin/registrations" element={<AdminProtectedRoute><AdminRegistrations /></AdminProtectedRoute>} />
-          <Route path="/admin/subscribers"   element={<AdminProtectedRoute><AdminSubscribers /></AdminProtectedRoute>} />
 
         </Routes>
 

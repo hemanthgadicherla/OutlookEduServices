@@ -6,12 +6,9 @@ import { blogAPI } from "../services/api";
 
 const Blogs = () => {
   const [blogs, setBlogs] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
-
-  const [subscriberEmail, setSubscriberEmail] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
 
@@ -62,67 +59,11 @@ const fetchBlogs = async () => {
 
 };
 
-  const fadeInUp = {
-    initial: { opacity: 0, y: 60 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6 }
-  };
-
   const categories = ['All', 'Study Abroad', 'Universities', 'Visa', 'Scholarships', 'Student Life', 'Language Tests'];
-
-  const [selectedCategory, setSelectedCategory] = useState('All');
 
   const filteredBlogs = selectedCategory === 'All'
     ? blogs
     : blogs.filter(blog => blog.category === selectedCategory);
-
-  const handleSubscribe =
-  async () => {
-
-  if (!subscriberEmail) {
-
-    alert("Enter email");
-
-    return;
-  }
-
-  const { error } =
-    await supabase
-      .from("blog_subscribers")
-      .insert([
-        {
-          email:
-            subscriberEmail,
-        },
-      ]);
-
-  if (error) {
-
-  if (
-    error.message.includes(
-      "duplicate key"
-    )
-  ) {
-
-    alert(
-      "You are already subscribed!"
-    );
-
-  }
-
-  else {
-
-    alert(error.message);
-  }
-
-  return;
-}
-  alert(
-    "Subscribed Successfully!"
-  );
-
-  setSubscriberEmail("");
-};
 
   if (loading) {
     return (

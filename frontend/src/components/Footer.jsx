@@ -1,69 +1,147 @@
-import React from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaWhatsapp } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaLinkedin, FaWhatsapp } from 'react-icons/fa';
+
+// Social icons with their brand colors on hover
+const socialLinks = [
+  {
+    href:  'https://www.facebook.com/OutlookEducationalServices/',
+    icon:  FaFacebook,
+    label: 'Facebook',
+    color: '#1877F2'
+  },
+  {
+    href:  'https://www.instagram.com/outlook_edu_services/',
+    icon:  FaInstagram,
+    label: 'Instagram',
+    color: '#E1306C'
+  },
+  {
+    href:  'https://www.linkedin.com/company/outlook-edu-services/',
+    icon:  FaLinkedin,
+    label: 'LinkedIn',
+    color: '#0A66C2'
+  },
+  {
+    href:  'https://wa.me/8977461804',
+    icon:  FaWhatsapp,
+    label: 'WhatsApp',
+    color: '#25D366'
+  }
+];
+
+const SocialIcon = ({ href, icon: Icon, label, color }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      className="me-3"
+      style={{
+        color:      hovered ? color : '#fff',
+        transition: 'color 0.2s ease',
+        display:    'inline-flex'
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <Icon size={22} />
+    </a>
+  );
+};
+
+const FooterLink = ({ to, children }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <li className="mb-1">
+      <Link
+        to={to}
+        style={{
+          color:          hovered ? '#facc15' : 'rgba(255,255,255,0.8)',
+          textDecoration: 'none',
+          transition:     'color 0.2s ease',
+          fontSize:       '14px'
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {children}
+      </Link>
+    </li>
+  );
+};
 
 const Footer = () => {
   return (
-    <footer className="bg-dark text-light py-5">
+    <footer className="text-light py-5" style={{ background: '#0d0d0d' }}>
       <div className="container">
-        <div className="row">
-          <div className="col-lg-4 mb-4">
-            <h5 className="mb-3" style={{ color: '#facc15' }}>Outlook Edu Services</h5>
-            <p>
+        <div className="row g-4">
+
+          {/* Brand + social */}
+          <div className="col-lg-4 col-md-6">
+            <h5 className="fw-bold mb-3" style={{ color: '#facc15' }}>Outlook Edu Services</h5>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '1.8' }}>
               Premium study abroad guidance for ambitious students planning their next chapter.
               We provide comprehensive educational consultancy services worldwide.
             </p>
-            <div className="social-links">
-              <a href="https://www.facebook.com/OutlookEducationalServices/" className="text-light me-3"><FaFacebook size={20} /></a>
-              <a href="https://www.instagram.com/outlook_edu_services/" className="text-light me-3"><FaInstagram size={20} /></a>
-              <a href="https://www.linkedin.com/company/outlook-edu-services/" className="text-light me-3"><FaLinkedin size={20} /></a>
-              <a href="https://wa.me/8977461804" className="text-light"><FaWhatsapp size={20} /></a>
+            <div className="mt-3">
+              {socialLinks.map((s) => (
+                <SocialIcon key={s.label} {...s} />
+              ))}
             </div>
           </div>
 
-          <div className="col-lg-2 col-md-4 mb-4">
-            <h6 className="mb-3" style={{ color: '#facc15' }}>Quick Links</h6>
-            <ul className="list-unstyled">
-              <li><Link to="/" className="text-light text-decoration-none">Home</Link></li>
-              <li><Link to="/about" className="text-light text-decoration-none">About</Link></li>
-              <li><Link to="/courses" className="text-light text-decoration-none">Courses</Link></li>
-              <li><Link to="/study-abroad" className="text-light text-decoration-none">Study Abroad</Link></li>
-              <li><Link to="/visit-visa" className="text-light text-decoration-none">Visit Visa</Link></li>
+          {/* Quick Links */}
+          <div className="col-lg-2 col-md-3 col-6">
+            <h6 className="fw-bold mb-3" style={{ color: '#facc15' }}>Quick Links</h6>
+            <ul className="list-unstyled mb-0">
+              <FooterLink to="/">Home</FooterLink>
+              <FooterLink to="/about">About</FooterLink>
+              <FooterLink to="/courses">Courses</FooterLink>
+              <FooterLink to="/study-abroad">Study Abroad</FooterLink>
+              <FooterLink to="/visit-visa">Visit Visa</FooterLink>
             </ul>
           </div>
 
-          <div className="col-lg-2 col-md-4 mb-4">
-            <h6 className="mb-3" style={{ color: '#facc15' }}>Services</h6>
-            <ul className="list-unstyled">
-              <li><Link to="/blogs" className="foot-link text-light text-decoration-none">Blogs</Link></li>
-              <li><Link to="/contact" className="foot-link text-light text-decoration-none">Contact</Link></li>
-              <li><Link to="/registration" className="foot-link text-light text-decoration-none">Registration</Link></li>
-              <li><Link to="/faq" className="foot-link text-light text-decoration-none">FAQ</Link></li>
-              <li><Link to="/support" className="foot-link text-light text-decoration-none">Support</Link></li>
+          {/* Services */}
+          <div className="col-lg-2 col-md-3 col-6">
+            <h6 className="fw-bold mb-3" style={{ color: '#facc15' }}>Services</h6>
+            <ul className="list-unstyled mb-0">
+              <FooterLink to="/blogs">Blogs</FooterLink>
+              <FooterLink to="/contact">Contact</FooterLink>
+              <FooterLink to="/registration">Registration</FooterLink>
+              <FooterLink to="/faq">FAQ</FooterLink>
+              <FooterLink to="/support">Support</FooterLink>
             </ul>
           </div>
 
-          <div className="col-lg-4 mb-4">
-            <h6 className="mb-3" style={{ color: '#facc15' }}>Contact Info</h6>
-            <p><strong>Head Office:</strong> Unit A Floor, Ahmed Mansion, 2, Santosh Nagar Main Rd, 
-                                        opposite Pillar Number 60, Central Excise Colony, 
-                                        New Santoshnagar, Santosh Nagar, Hyderabad, Telangana 500059</p>
-            <p><strong>Phone:</strong> +91 89770 11804</p>
-            <p><strong>Email:</strong> contact@outlookeduservices.com</p>
+          {/* Contact */}
+          <div className="col-lg-4 col-md-6">
+            <h6 className="fw-bold mb-3" style={{ color: '#facc15' }}>Contact Info</h6>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '1.8' }}>
+              <strong className="text-white">Head Office:</strong> Unit A Floor, Ahmed Mansion, 2,
+              Santosh Nagar Main Rd, opposite Pillar Number 60, Central Excise Colony,
+              New Santoshnagar, Santosh Nagar, Hyderabad, Telangana 500059
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>
+              <strong className="text-white">Phone:</strong> +91 89770 11804
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>
+              <strong className="text-white">Email:</strong> contact@outlookeduservices.com
+            </p>
           </div>
+
         </div>
 
-        <hr className="my-4" />
+        <hr className="my-4" style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
 
-        <div className="row align-items-center">
-          <div className="col-md-6">
-            <p className="mb-0">&copy; 2026 Outlook Edu Services. All rights reserved.</p>
-          </div>
-          {/* <div className="col-md-6 text-md-end">
-            <Link to="/privacy" className="text-light text-decoration-none me-3">Privacy Policy</Link>
-            <Link to="/terms" className="text-light text-decoration-none">Terms of Service</Link>
-          </div> */}
-        </div>
+        {/* Copyright — centered */}
+        <p className="text-center mb-0" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
+          &copy; 2026 Outlook Edu Services. All rights reserved.
+        </p>
+
       </div>
     </footer>
   );
