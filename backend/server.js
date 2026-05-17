@@ -38,31 +38,19 @@ dotenv.config();
 
 // ENV VALIDATION
 if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET missing');
+}
 
-  throw new Error(
-    'JWT_SECRET missing'
-  );
-
+if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters in production');
 }
 
 if (!process.env.SUPABASE_URL) {
-
-  throw new Error(
-    'SUPABASE_URL missing'
-  );
-
+  throw new Error('SUPABASE_URL missing');
 }
 
-if (
-  !process.env.SUPABASE_SERVICE_ROLE_KEY
-) {
-
-  throw new Error(
-
-    'SUPABASE_SERVICE_ROLE_KEY missing'
-
-  );
-
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY missing');
 }
 
 
@@ -85,24 +73,22 @@ app.disable('x-powered-by');
 // =========================
 // CORS FIRST
 // =========================
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(
-
   cors({
-
-    origin: [
-
-      'http://localhost:5173',
-
-      'http://127.0.0.1:5173',
-
-      process.env.FRONTEND_URL
-
-    ].filter(Boolean),
-
+    origin: (origin, callback) => {
+      // allow server-to-server / curl (no origin header)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error(`CORS blocked: ${origin}`));
+    },
     credentials: true
-
   })
-
 );
 
 
