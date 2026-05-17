@@ -101,30 +101,17 @@ const createBlog = async (
 
 
     // Duplicate slug check
-    const {
-      data: existingBlog
-    } = await supabase
-
+    const { data: existingBlog } = await supabase
       .from('blogs')
-
       .select('id')
-
       .eq('slug', value.slug)
-
-      .single();
-
+      .maybeSingle();
 
     if (existingBlog) {
-
       return res.status(400).json({
-
         success: false,
-
-        message:
-          'Blog slug already exists'
-
+        message: 'A blog with this title already exists. Please use a different title.'
       });
-
     }
 
 
@@ -449,31 +436,17 @@ const getSingleBlog = async (
     }
 
 
-    const {
-      data,
-      error
-    } = await supabase
-
+    const { data, error } = await supabase
       .from('blogs')
-
       .select('*')
-
       .eq('slug', slug)
-
-      .single();
-
+      .maybeSingle();
 
     if (error || !data) {
-
       return res.status(404).json({
-
         success: false,
-
-        message:
-          'Blog not found'
-
+        message: 'Blog not found'
       });
-
     }
 
 

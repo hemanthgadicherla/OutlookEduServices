@@ -6,5 +6,6 @@ exports.courseSchema = Joi.object({
   fullDescription:  Joi.string().allow('').optional(),
   full_description: Joi.string().allow('').optional(),
   price:            Joi.alternatives().try(Joi.number().min(0), Joi.string()).required(),
-  image:            Joi.string().allow('').optional()
+  image:            Joi.string().allow('').optional(),
+  is_published:     Joi.boolean().optional()
 });

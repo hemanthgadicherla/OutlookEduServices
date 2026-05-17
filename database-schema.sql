@@ -124,9 +124,9 @@ CREATE INDEX idx_users_is_active ON users (is_active);
 -- COURSES
 -- slug        = SEO-friendly URL: /courses/ielts-preparation
 -- category    = filter/group courses on the frontend
--- is_published = draft mode — false hides from public listing
--- enrolled_count = cached counter updated by trigger (avoids
---   expensive COUNT queries on user_courses at scale)
+-- is_published = TRUE  → Active   (visible with enroll button)
+--               FALSE → Upcoming (visible as "Coming Soon", no enroll)
+-- enrolled_count = cached counter updated by trigger
 -- ----------------------------------------------------------------
 CREATE TABLE courses (
   id               SERIAL        PRIMARY KEY,

@@ -619,26 +619,15 @@ const AdminBlogs = () => {
 
                   <div className="card h-100 shadow-sm">
 
-                    {
-                      blog.image && (
-
-                        <img
-
-                          src={blog.image}
-
-                          alt={blog.title}
-
-                          className="card-img-top"
-
-                          style={{
-                            height: "220px",
-                            objectFit: "cover"
-                          }}
-
-                        />
-
-                      )
-                    }
+                    {blog.image && (
+                      <img
+                        src={blog.image}
+                        alt={blog.title}
+                        className="card-img-top"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                        style={{ height: "220px", objectFit: "cover" }}
+                      />
+                    )}
 
 
                     <div className="card-body">

@@ -49,16 +49,19 @@ const CourseDetail = () => {
         <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '180px', height: '180px', background: 'rgba(255,193,7,0.12)', borderRadius: '50%', filter: 'blur(70px)' }} />
 
         {/* Course Image */}
-        <motion.img
-          src={course.image}
-          alt={course.title}
-          className="img-fluid mb-4"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7 }}
-          whileHover={{ scale: 1.02 }}
-          style={{ width: '100%', maxHeight: '500px', objectFit: 'cover', borderRadius: '28px', border: '2px solid rgba(255,193,7,0.18)', boxShadow: '0 20px 45px rgba(0,0,0,0.35)' }}
-        />
+        {course.image && (
+          <motion.img
+            src={course.image}
+            alt={course.title}
+            className="img-fluid mb-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7 }}
+            whileHover={{ scale: 1.02 }}
+            onError={(e) => { e.target.style.display = 'none'; }}
+            style={{ width: '100%', maxHeight: '500px', objectFit: 'cover', borderRadius: '28px', border: '2px solid rgba(255,193,7,0.18)', boxShadow: '0 20px 45px rgba(0,0,0,0.35)' }}
+          />
+        )}
 
         {/* Badge */}
         <span className="px-4 py-2 d-inline-block mb-4" style={{ borderRadius: '50px', background: 'rgba(255,193,7,0.12)', color: '#ffc107', border: '1px solid rgba(255,193,7,0.3)', fontWeight: '600', letterSpacing: '1px' }}>

@@ -28,103 +28,45 @@ const getHeaders = () => {
 // BLOG API
 export const blogAPI = {
 
-  // GET BLOGS
+  // GET ALL BLOGS
   getBlogs: async () => {
-
-    const response =
-      await fetch(
-        `${API_BASE_URL}/blogs`
-      );
-
+    const response = await fetch(`${API_BASE_URL}/blogs`);
     return await response.json();
-
   },
 
+  // GET SINGLE BLOG BY SLUG
+  getSingleBlog: async (slug) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${slug}`);
+    return await response.json();
+  },
 
   // CREATE BLOG
-  createBlog: async (
-    blogData
-  ) => {
-
-    const response =
-      await fetch(
-
-        `${API_BASE_URL}/blogs`,
-
-        {
-
-          method: 'POST',
-
-          headers:
-            getHeaders(),
-
-          body: JSON.stringify(
-            blogData
-          )
-
-        }
-
-      );
-
+  createBlog: async (blogData) => {
+    const response = await fetch(`${API_BASE_URL}/blogs`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(blogData)
+    });
     return await response.json();
-
   },
-
 
   // UPDATE BLOG
-  updateBlog: async (
-    id,
-    blogData
-  ) => {
-
-    const response =
-      await fetch(
-
-        `${API_BASE_URL}/blogs/${id}`,
-
-        {
-
-          method: 'PUT',
-
-          headers:
-            getHeaders(),
-
-          body: JSON.stringify(
-            blogData
-          )
-
-        }
-
-      );
-
+  updateBlog: async (id, blogData) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(blogData)
+    });
     return await response.json();
-
   },
 
-
   // DELETE BLOG
-  deleteBlog: async (
-    id
-  ) => {
-
-    const response =
-      await fetch(
-
-        `${API_BASE_URL}/blogs/${id}`,
-
-        {
-
-          method: 'DELETE',
-
-          headers:
-            getHeaders()
-
-        }
-
-      );
-
+  deleteBlog: async (id) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
     return await response.json();
-
   }
 
 };
@@ -206,6 +148,16 @@ export const courseAPI = {
 
   },
 
+
+  // Toggle Active / Upcoming
+  toggleStatus: async (id, is_published) => {
+    const response = await fetch(`${API_BASE_URL}/courses/${id}/status`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ is_published })
+    });
+    return await response.json();
+  },
 
   // Delete Course
   deleteCourse: async (

@@ -186,51 +186,26 @@ const BlogDetail = () => {
         />
 
         {/* Blog Image */}
-
-        <motion.img
-
-          src={blog.image}
-
-          alt={blog.title}
-
-          className="img-fluid mb-5"
-
-          initial={{
-            opacity: 0,
-            scale: 0.95,
-          }}
-
-          animate={{
-            opacity: 1,
-            scale: 1,
-          }}
-
-          transition={{
-            duration: 0.7,
-          }}
-
-          whileHover={{
-            scale: 1.02,
-          }}
-
-          style={{
-
-            width: "100%",
-
-            maxHeight: "550px",
-
-            objectFit: "cover",
-
-            borderRadius: "30px",
-
-            border:
-              "2px solid rgba(255,193,7,0.18)",
-
-            boxShadow:
-              "0 20px 45px rgba(0,0,0,0.35)",
-
-          }}
-        />
+        {blog.image && (
+          <motion.img
+            src={blog.image}
+            alt={blog.title}
+            className="img-fluid mb-5"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7 }}
+            whileHover={{ scale: 1.02 }}
+            onError={(e) => { e.target.style.display = 'none'; }}
+            style={{
+              width: "100%",
+              maxHeight: "550px",
+              objectFit: "cover",
+              borderRadius: "30px",
+              border: "2px solid rgba(255,193,7,0.18)",
+              boxShadow: "0 20px 45px rgba(0,0,0,0.35)",
+            }}
+          />
+        )}
 
         {/* Badge */}
 

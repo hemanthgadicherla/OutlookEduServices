@@ -1,589 +1,293 @@
-import React, { useEffect, useState } from "react";
-import AdminSidebar from "../components/AdminSidebar";
-import { courseAPI, uploadAPI } from "../services/api";
+import { useEffect, useState } from 'react';
+import AdminSidebar from '../components/AdminSidebar';
+import { courseAPI, uploadAPI } from '../services/api';
+import { toast } from 'react-toastify';
+
+const EMPTY = {
+  title: '', description: '', fullDescription: '',
+  price: '', image: '', imageFile: null, preview: ''
+};
 
 const AdminCourses = () => {
+  const [courses,   setCourses]   = useState([]);
+  const [form,      setForm]      = useState(EMPTY);
+  const [editingId, setEditingId] = useState(null);
+  const [loading,   setLoading]   = useState(false);
 
-  const [courses, setCourses] =
-    useState([]);
+  useEffect(() => { fetchCourses(); }, []);
 
-  const [title, setTitle] =
-    useState("");
-
-  const [
-    description,
-    setDescription
-  ] = useState("");
-
-  const [
-    fullDescription,
-    setFullDescription
-  ] = useState("");
-
-  const [price, setPrice] =
-    useState("");
-
-  const [image, setImage] =
-    useState("");
-
-  const [
-    imageFile,
-    setImageFile
-  ] = useState(null);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [preview, setPreview] =
-    useState("");
-
-  const [editingId, setEditingId] =
-    useState(null);
-
-
-  useEffect(() => {
-
-    fetchCourses();
-
-  }, []);
-
-
-  // FETCH COURSES
   const fetchCourses = async () => {
-
     try {
-
-      const response =
-        await courseAPI.getCourses();
-
-      if (response.success) {
-
-        setCourses(
-          response.data
-        );
-
-      }
-
-    }
-
-    catch (error) {
-
-      console.error(error);
-
-    }
-
+      const res = await courseAPI.getCourses();
+      if (res.success) setCourses(res.data);
+    } catch (e) { console.error(e); }
   };
 
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-  // IMAGE PREVIEW
-  const handleImageChange = (
-    e
-  ) => {
-
-    const file =
-      e.target.files[0];
-
-    setImageFile(file);
-
-    if (file) {
-
-      setPreview(
-        URL.createObjectURL(
-          file
-        )
-      );
-
-    }
-
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setForm({ ...form, imageFile: file, preview: URL.createObjectURL(file) });
   };
 
+  const resetForm = () => { setForm(EMPTY); setEditingId(null); };
 
-  // SUBMIT FORM
-  const handleSubmit = async (
-    e
-  ) => {
+  const handleEdit = (c) => {
+    setEditingId(c.id);
+    setForm({
+      title:           c.title           || '',
+      description:     c.description     || '',
+      fullDescription: c.full_description || '',
+      price:           c.price           ?? '',
+      image:           c.image           || '',
+      imageFile:       null,
+      preview:         c.image           || ''
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setLoading(true);
     try {
+      let imageUrl = form.image;
 
-      setLoading(true);
-
-      let imageUrl = image;
-
-
-      // Upload Image
-      if (imageFile) {
-
-        const uploadResponse =
-          await uploadAPI.uploadImage(
-            imageFile
-          );
-
-        if (
-          uploadResponse.success
-        ) {
-
-          imageUrl =
-            uploadResponse.imageUrl;
-
-        } else {
-
-          alert(
-            "Image upload failed"
-          );
-
-          setLoading(false);
-
-          return;
-
-        }
-
+      if (form.imageFile) {
+        const up = await uploadAPI.uploadImage(form.imageFile);
+        if (up.success) { imageUrl = up.imageUrl; }
+        else { toast.error('Image upload failed'); return; }
       }
 
-
-      const courseData = {
-
-        title,
-
-        description,
-
-        fullDescription,
-
-        price,
-
-        image: imageUrl,
-
+      const payload = {
+        title:           form.title,
+        description:     form.description,
+        fullDescription: form.fullDescription,
+        price:           form.price,
+        image:           imageUrl
       };
 
+      const res = editingId
+        ? await courseAPI.updateCourse(editingId, payload)
+        : await courseAPI.createCourse(payload);
 
-      let response;
-
-
-      // UPDATE
-      if (editingId) {
-
-        response =
-          await courseAPI.updateCourse(
-
-            editingId,
-
-            courseData
-
-          );
-
-      }
-
-      // CREATE
-      else {
-
-        response =
-          await courseAPI.createCourse(
-            courseData
-          );
-
-      }
-
-
-      if (response.success) {
-
-        alert(
-
-          editingId
-            ? "Course updated successfully"
-            : "Course added successfully"
-
-        );
-
+      if (res.success) {
+        toast.success(editingId ? 'Course updated' : 'Course added');
         resetForm();
-
         fetchCourses();
-
+      } else {
+        toast.error(res.message || 'Something went wrong');
       }
-
-      else {
-
-        alert(
-          response.message
-        );
-
-      }
-
-    }
-
-    catch (error) {
-
-      console.error(error);
-
-      alert(
-        "Something went wrong"
-      );
-
-    }
-
-    finally {
-
+    } catch (err) {
+      console.error(err);
+      toast.error('Something went wrong');
+    } finally {
       setLoading(false);
-
     }
-
   };
 
-
-  // EDIT COURSE
-  const handleEdit = (course) => {
-    setEditingId(course.id);
-    setTitle(course.title || '');
-    setDescription(course.description || '');
-    setFullDescription(course.full_description || '');
-    setPrice(course.price ?? '');
-    setImage(course.image || '');
-    setPreview(course.image || '');
-  };
-
-
-  // DELETE COURSE
-  const handleDelete = async (
-    id
-  ) => {
-
-    const confirmDelete =
-      window.confirm(
-        "Delete this course?"
-      );
-
-    if (!confirmDelete)
-      return;
-
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this course?')) return;
     try {
+      const res = await courseAPI.deleteCourse(id);
+      if (res.success) { toast.success('Course deleted'); fetchCourses(); }
+    } catch (e) { console.error(e); }
+  };
 
-      const response =
-        await courseAPI.deleteCourse(
-          id
-        );
-
-      if (response.success) {
-
-        alert(
-          "Course deleted successfully"
-        );
-
+  // Toggle active ↔ upcoming
+  const handleToggleStatus = async (course) => {
+    try {
+      const res = await courseAPI.toggleStatus(course.id, !course.is_published);
+      if (res.success) {
+        toast.success(res.message);
         fetchCourses();
-
+      } else {
+        toast.error(res.message || 'Failed to update status');
       }
-
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to update status');
     }
-
-    catch (error) {
-
-      console.error(error);
-
-    }
-
   };
 
-
-  // RESET FORM
-  const resetForm = () => {
-
-    setEditingId(null);
-
-    setTitle("");
-
-    setDescription("");
-
-    setFullDescription("");
-
-    setPrice("");
-
-    setImage("");
-
-    setImageFile(null);
-
-    setPreview("");
-
-  };
-
+  const activeCourses   = courses.filter(c => c.is_published);
+  const upcomingCourses = courses.filter(c => !c.is_published);
 
   return (
-
     <div className="d-flex">
-
       <AdminSidebar />
 
-      <div
-        className="flex-grow-1 p-4 bg-light"
-        style={{
-          minHeight: "100vh"
-        }}
-      >
+      <div className="flex-grow-1 p-4 bg-light" style={{ minHeight: '100vh' }}>
+        <h1 className="mb-4 fw-bold">Course Management</h1>
 
-        <h1 className="mb-4">
-          Course Management
-        </h1>
-
-
-        {/* FORM */}
-        <div className="card p-4 mb-4">
-
-          <form
-            onSubmit={handleSubmit}
-          >
-
-            <input
-
-              type="text"
-
-              placeholder="Course Title"
-
-              className="form-control mb-3"
-
-              value={title}
-
-              onChange={(e) =>
-                setTitle(
-                  e.target.value
-                )
-              }
-
-              required
-
-            />
-
-
-            <textarea
-
-              placeholder="Description"
-
-              className="form-control mb-3"
-
-              value={description}
-
-              onChange={(e) =>
-                setDescription(
-                  e.target.value
-                )
-              }
-
-              required
-
-            />
-
-
-            <textarea
-
-              placeholder="Full Course Details"
-
-              className="form-control mb-3"
-
-              rows="8"
-
-              value={
-                fullDescription
-              }
-
-              onChange={(e) =>
-                setFullDescription(
-                  e.target.value
-                )
-              }
-
-            />
-
-
-            <input
-
-              type="number"
-
-              placeholder="Price"
-
-              className="form-control mb-3"
-
-              value={price}
-
-              onChange={(e) =>
-                setPrice(
-                  e.target.value
-                )
-              }
-
-              required
-
-            />
-
-
-            <input
-
-              type="file"
-
-              className="form-control mb-3"
-
-              accept="image/*"
-
-              onChange={
-                handleImageChange
-              }
-
-            />
-
-
-            {/* IMAGE PREVIEW */}
-            {
-              preview && (
-
-                <img
-
-                  src={preview}
-
-                  alt="Preview"
-
-                  className="mb-3 rounded"
-
-                  style={{
-                    width: "220px",
-                    height: "160px",
-                    objectFit: "cover"
-                  }}
-
+        {/* ── FORM ── */}
+        <div className="card border-0 shadow-sm p-4 mb-5">
+          <h5 className="fw-bold mb-3">{editingId ? '✏️ Edit Course' : '➕ Add New Course'}</h5>
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <input
+                  name="title" type="text" placeholder="Course Title"
+                  className="form-control" value={form.title}
+                  onChange={handleChange} required
                 />
+              </div>
+              <div className="col-md-6">
+                <input
+                  name="price" type="number" placeholder="Price (₹)"
+                  className="form-control" value={form.price}
+                  onChange={handleChange} required
+                />
+              </div>
+              <div className="col-12">
+                <textarea
+                  name="description" placeholder="Short Description"
+                  className="form-control" rows="2"
+                  value={form.description} onChange={handleChange} required
+                />
+              </div>
+              <div className="col-12">
+                <textarea
+                  name="fullDescription" placeholder="Full Course Details"
+                  className="form-control" rows="6"
+                  value={form.fullDescription} onChange={handleChange}
+                />
+              </div>
+              <div className="col-12">
+                <input
+                  type="file" className="form-control" accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </div>
+              {form.preview && (
+                <div className="col-12">
+                  <img
+                    src={form.preview} alt="Preview"
+                    className="rounded"
+                    style={{ width: 220, height: 150, objectFit: 'cover' }}
+                  />
+                </div>
+              )}
+            </div>
 
-              )
-            }
-
-
-            <button
-              className="btn btn-primary"
-              disabled={loading}
-            >
-
-              {
-                loading
-                  ? "Processing..."
-                  : editingId
-                  ? "Update Course"
-                  : "Add Course"
-              }
-
-            </button>
-
+            <div className="d-flex gap-2 mt-3">
+              <button className="btn btn-primary" disabled={loading}>
+                {loading ? 'Processing…' : editingId ? 'Update Course' : 'Add Course'}
+              </button>
+              {editingId && (
+                <button type="button" className="btn btn-outline-secondary" onClick={resetForm}>
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
-
         </div>
 
+        {/* ── ACTIVE COURSES ── */}
+        <div className="mb-5">
+          <h4 className="fw-bold mb-3 d-flex align-items-center gap-2">
+            <span className="badge bg-success">Active</span>
+            Courses
+            <span className="badge bg-secondary ms-1">{activeCourses.length}</span>
+          </h4>
 
-        {/* COURSE LIST */}
-        <div className="row">
+          {activeCourses.length === 0 && (
+            <p className="text-muted">No active courses yet.</p>
+          )}
 
-          {
-            courses.map(
-              (course) => (
+          <div className="row g-3">
+            {activeCourses.map(course => (
+              <div key={course.id} className="col-md-4">
+                <CourseCard
+                  course={course}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggle={handleToggleStatus}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
 
-                <div
+        {/* ── UPCOMING COURSES ── */}
+        <div>
+          <h4 className="fw-bold mb-3 d-flex align-items-center gap-2">
+            <span className="badge bg-warning text-dark">Upcoming</span>
+            Courses
+            <span className="badge bg-secondary ms-1">{upcomingCourses.length}</span>
+          </h4>
 
-                  key={course.id}
+          {upcomingCourses.length === 0 && (
+            <p className="text-muted">No upcoming courses.</p>
+          )}
 
-                  className="col-md-4 mb-4"
-
-                >
-
-                  <div
-                    className="card h-100 shadow-sm"
-                  >
-
-                    {
-                      course.image && (
-
-                        <img
-
-                          src={course.image}
-
-                          alt={course.title}
-
-                          className="card-img-top"
-
-                          style={{
-
-                            height: "220px",
-
-                            objectFit:
-                              "cover",
-
-                          }}
-
-                        />
-
-                      )
-                    }
-
-
-                    <div className="card-body">
-
-                      <h5>
-                        {course.title}
-                      </h5>
-
-                      <p>
-                        {
-                          course.description
-                        }
-                      </p>
-
-                      <h6>
-                        ₹{course.price}
-                      </h6>
-
-
-                      <div className="d-flex gap-2 mt-3">
-
-                        <button
-
-                          className="btn btn-warning btn-sm"
-
-                          onClick={() =>
-                            handleEdit(
-                              course
-                            )
-                          }
-
-                        >
-                          Edit
-                        </button>
-
-
-                        <button
-
-                          className="btn btn-danger btn-sm"
-
-                          onClick={() =>
-                            handleDelete(
-                              course.id
-                            )
-                          }
-
-                        >
-                          Delete
-                        </button>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              )
-            )
-          }
-
+          <div className="row g-3">
+            {upcomingCourses.map(course => (
+              <div key={course.id} className="col-md-4">
+                <CourseCard
+                  course={course}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggle={handleToggleStatus}
+                />
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>
-
     </div>
-
   );
-
 };
+
+
+// ── Course Card sub-component ──────────────────────────────────────
+const CourseCard = ({ course, onEdit, onDelete, onToggle }) => (
+  <div className="card h-100 shadow-sm border-0">
+    {course.image && (
+      <img
+        src={course.image} alt={course.title}
+        className="card-img-top"
+        onError={(e) => { e.target.style.display = 'none'; }}
+        style={{ height: 180, objectFit: 'cover' }}
+      />
+    )}
+    <div className="card-body d-flex flex-column">
+      <div className="d-flex justify-content-between align-items-start mb-2">
+        <h6 className="fw-bold mb-0">{course.title}</h6>
+        <span className={`badge ${course.is_published ? 'bg-success' : 'bg-warning text-dark'}`}>
+          {course.is_published ? 'Active' : 'Upcoming'}
+        </span>
+      </div>
+      <p className="text-muted small mb-1">{course.description}</p>
+      <p className="fw-semibold mb-3">₹{Number(course.price).toLocaleString()}</p>
+
+      {/* Status toggle */}
+      <div className="form-check form-switch mb-3">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          role="switch"
+          id={`status-${course.id}`}
+          checked={!!course.is_published}
+          onChange={() => onToggle(course)}
+        />
+        <label className="form-check-label small" htmlFor={`status-${course.id}`}>
+          {course.is_published ? 'Active (visible)' : 'Upcoming (coming soon)'}
+        </label>
+      </div>
+
+      <div className="d-flex gap-2 mt-auto">
+        <button className="btn btn-warning btn-sm flex-grow-1" onClick={() => onEdit(course)}>
+          Edit
+        </button>
+        <button className="btn btn-danger btn-sm flex-grow-1" onClick={() => onDelete(course.id)}>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 export default AdminCourses;

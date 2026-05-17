@@ -367,22 +367,19 @@ const fetchBlogs = async () => {
                   }}
                 >
 
-                  <img
-
-                    src={blog.image}
-
-                    alt={blog.title}
-
-                    className="w-100"
-
-                    style={{
-
-                      height: "240px",
-
-                      objectFit: "cover",
-
-                    }}
-                  />
+                  {blog.image && (
+                    <img
+                      src={blog.image}
+                      alt={blog.title}
+                      className="w-100"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                      style={{
+                        height: "240px",
+                        objectFit: "cover",
+                        borderRadius: "30px 30px 0 0",
+                      }}
+                    />
+                  )}
 
                   <div className="p-4 d-flex flex-column flex-grow-1">
 

@@ -825,7 +825,7 @@ const About = () => {
 
                 <motion.img
 
-                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f"
+                  src="https://res.cloudinary.com/dq0jk0ih5/image/upload/v1778949557/Photo1_js5jyf.jpg"
 
                   alt="Students collaborating"
 
