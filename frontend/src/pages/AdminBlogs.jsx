@@ -292,50 +292,17 @@ const AdminBlogs = () => {
 
 
   // EDIT
-  const handleEdit = (
-    blog
-  ) => {
-
-    setEditingId(
-      blog.id
-    );
-
-    setTitle(
-      blog.title
-    );
-
-    setContent(
-      blog.excerpt
-    );
-
-    setFullContent(
-      blog.content
-    );
-
-    setAuthor(
-      blog.author
-    );
-
-    setDate(
-      blog.date
-    );
-
-    setReadTime(
-      blog.read_time
-    );
-
-    setCategory(
-      blog.category
-    );
-
-    setImage(
-      blog.image
-    );
-
-    setPreview(
-      blog.image
-    );
-
+  const handleEdit = (blog) => {
+    setEditingId(blog.id);
+    setTitle(blog.title || '');
+    setContent(blog.excerpt || '');
+    setFullContent(blog.content || '');
+    setAuthor(blog.author || '');
+    setDate(blog.date || '');
+    setReadTime(blog.read_time || '');
+    setCategory(blog.category || '');
+    setImage(blog.image || '');
+    setPreview(blog.image || '');
   };
 
 

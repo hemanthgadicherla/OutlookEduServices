@@ -218,92 +218,36 @@ const updateCourse = async (
 
 
     const {
-
       title,
-
       description,
-
       fullDescription,
-
       price,
-
       image
-
     } = req.body;
 
-
-    const updates = {
-
-      title,
-
-      description,
-
-      full_description:
-        fullDescription,
-
-      price,
-
-      image
-
-    };
-
-
-    // Remove Undefined
-    const filteredUpdates =
-      Object.fromEntries(
-
-        Object.entries(
-          updates
-        ).filter(
-
-          ([_, value]) =>
-            value !== undefined
-
-        )
-
-      );
-
-
-    // Validation
-    const {
-      error: validationError
-    } = courseSchema.validate(
-      filteredUpdates
-    );
-
-
+    // Validate the incoming body (camelCase keys from frontend)
+    const { error: validationError } = courseSchema.validate(req.body);
     if (validationError) {
-
       return res.status(400).json({
-
         success: false,
-
-        message:
-          validationError
-            .details[0]
-            .message
-
+        message: validationError.details[0].message
       });
-
     }
+
+    const updates = {};
+    if (title       !== undefined) updates.title            = title;
+    if (description !== undefined) updates.description      = description;
+    if (fullDescription !== undefined) updates.full_description = fullDescription;
+    if (price       !== undefined) updates.price            = parseFloat(price);
+    if (image       !== undefined) updates.image            = image;
 
 
     // Update Course
-    const {
-      data,
-      error
-    } = await supabase
-
+    const { data, error } = await supabase
       .from('courses')
-
-      .update(
-        filteredUpdates
-      )
-
+      .update(updates)
       .eq('id', id)
-
       .select()
-
       .single();
 
 

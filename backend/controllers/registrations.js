@@ -2,34 +2,14 @@ const supabase = require('../config/supabase');
 const Joi = require('joi');
 
 const registrationSchema = Joi.object({
-  full_name: Joi.string()
-    .min(2)
-    .max(100)
-    .required(),
-
-  phone: Joi.string()
-    .pattern(/^[6-9]\d{9}$/)
-    .required(),
-
-  email: Joi.string()
-    .email()
-    .required(),
-
-  course_id: Joi.number()
-    .integer()
-    .optional(),
-
-  selected_course: Joi.string()
-    .required(),
-
-  country: Joi.string()
-    .optional()
-    .allow(''),
-
-  message: Joi.string()
-    .max(500)
-    .optional()
-    .allow('')
+  full_name: Joi.string().min(2).max(100).required(),
+  phone:     Joi.string().pattern(/^[6-9]\d{9}$/).required(),
+  email:     Joi.string().email().required(),
+  course_id: Joi.number().integer().optional().allow(null),
+  selected_course: Joi.string().required(),
+  country:  Joi.string().optional().allow('', null),
+  message:  Joi.string().max(500).optional().allow('', null),
+  user_id:  Joi.string().uuid().optional().allow(null)
 });
 
 
@@ -60,78 +40,39 @@ const createRegistration = async (
     }
 
     // Normalize Email
-    value.email =
-      value.email.trim().toLowerCase();
+    value.email = value.email.trim().toLowerCase();
 
     // Check Duplicate Registration
-    const {
-      data: existingUser
-    } = await supabase
-
+    const { data: existingUser } = await supabase
       .from('registrations')
-
       .select('id')
-
       .eq('email', value.email)
-
-      .eq(
-        'selected_course',
-        value.selected_course
-      )
-
-      .single();
-
+      .eq('selected_course', value.selected_course)
+      .maybeSingle();
 
     if (existingUser) {
-
       return res.status(400).json({
-
         success: false,
-
-        message:
-          'You already registered for this course'
-
+        message: 'You already registered for this course'
       });
-
     }
 
-
     // Insert Registration
-    const {
-      data,
-      error: dbError
-    } = await supabase
-
+    const { data, error: dbError } = await supabase
       .from('registrations')
-
       .insert([{
-
-        student_name:
-          value.full_name,
-
-        email: value.email,
-
-        phone: value.phone,
-
-        course_id:
-          value.course_id || null,
-
-        selected_course:
-          value.selected_course,
-
-        country: value.country || null,
-
-        message: value.message || null,
-
-        payment_status: 'pending',
-
-        created_at:
-          new Date().toISOString()
-
+        user_id:         value.user_id    || null,
+        student_name:    value.full_name,
+        email:           value.email,
+        phone:           value.phone,
+        course_id:       value.course_id  || null,
+        selected_course: value.selected_course,
+        country:         value.country    || null,
+        message:         value.message    || null,
+        payment_status:  'pending',
+        created_at:      new Date().toISOString()
       }])
-
       .select()
-
       .single();
 
 

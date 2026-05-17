@@ -11,7 +11,6 @@ if (!supabaseUrl || !serviceRoleKey) {
 
 // ── Service-role client ──────────────────────────────────────────
 // Used for: admin.createUser, DB queries (bypasses RLS), etc.
-// Cannot be used for signInWithPassword — service role has no session.
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: {
     autoRefreshToken:   false,
@@ -20,10 +19,11 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   }
 });
 
-// ── Anon client ──────────────────────────────────────────────────
-// Used exclusively for signInWithPassword (authenticates as the user).
-// Falls back to service role key if SUPABASE_ANON_KEY is not set,
-// but login WILL fail in that case — add the anon key to .env.
+// ── Anon / public client ─────────────────────────────────────────
+// Used for signInWithPassword and OAuth flows.
+// Uses SUPABASE_ANON_KEY if set, otherwise falls back to service role key.
+// NOTE: signInWithPassword works with either key on the server side
+// when called from a trusted backend environment.
 const supabaseAnon = createClient(supabaseUrl, anonKey || serviceRoleKey, {
   auth: {
     autoRefreshToken:   false,
@@ -34,3 +34,5 @@ const supabaseAnon = createClient(supabaseUrl, anonKey || serviceRoleKey, {
 
 module.exports = supabase;
 module.exports.supabaseAnon = supabaseAnon;
+module.exports.supabaseUrl  = supabaseUrl;
+module.exports.serviceRoleKey = serviceRoleKey;

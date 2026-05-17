@@ -1,7 +1,27 @@
 const supabase = require('../config/supabase');
-const { supabaseAnon } = require('../config/supabase');
+const { supabaseAnon, supabaseUrl, serviceRoleKey } = require('../config/supabase');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
+
+// ── signInWithPassword via REST (works with service role key) ────
+const signInWithPassword = async (email, password) => {
+  const res = await fetch(
+    `${supabaseUrl}/auth/v1/token?grant_type=password`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': serviceRoleKey
+      },
+      body: JSON.stringify({ email, password })
+    }
+  );
+  const data = await res.json();
+  if (!res.ok || data.error) {
+    return { data: null, error: data };
+  }
+  return { data: { user: data.user }, error: null };
+};
 
 
 // ================================================================
@@ -123,10 +143,7 @@ const login = async (req, res) => {
     });
   }
 
-  const { data, error } = await supabaseAnon.auth.signInWithPassword({
-    email,
-    password
-  });
+  const { data, error } = await signInWithPassword(email, password);
 
   if (error || !data?.user) {
     return res.status(401).json({

@@ -1,7 +1,27 @@
 const supabase = require('../config/supabase');
-const { supabaseAnon } = require('../config/supabase');
+const { supabaseUrl, serviceRoleKey } = require('../config/supabase');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
+
+// ── signInWithPassword via REST (works with service role key) ────
+const signInWithPassword = async (email, password) => {
+  const res = await fetch(
+    `${supabaseUrl}/auth/v1/token?grant_type=password`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': serviceRoleKey
+      },
+      body: JSON.stringify({ email, password })
+    }
+  );
+  const data = await res.json();
+  if (!res.ok || data.error) {
+    return { data: null, error: data };
+  }
+  return { data: { user: data.user }, error: null };
+};
 
 
 const signAdminToken = (user) =>
@@ -31,11 +51,8 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid email format' });
     }
 
-    // Authenticate via Supabase Auth (must use anon client, not service role)
-    const { data: authData, error: authError } = await supabaseAnon.auth.signInWithPassword({
-      email,
-      password
-    });
+    // Authenticate via Supabase Auth REST (works without anon key)
+    const { data: authData, error: authError } = await signInWithPassword(email, password);
 
     if (authError || !authData?.user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });

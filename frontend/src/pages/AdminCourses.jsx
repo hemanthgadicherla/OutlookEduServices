@@ -231,38 +231,14 @@ const AdminCourses = () => {
 
 
   // EDIT COURSE
-  const handleEdit = (
-    course
-  ) => {
-
-    setEditingId(
-      course.id
-    );
-
-    setTitle(
-      course.title
-    );
-
-    setDescription(
-      course.description
-    );
-
-    setFullDescription(
-      course.full_description
-    );
-
-    setPrice(
-      course.price
-    );
-
-    setImage(
-      course.image
-    );
-
-    setPreview(
-      course.image
-    );
-
+  const handleEdit = (course) => {
+    setEditingId(course.id);
+    setTitle(course.title || '');
+    setDescription(course.description || '');
+    setFullDescription(course.full_description || '');
+    setPrice(course.price ?? '');
+    setImage(course.image || '');
+    setPreview(course.image || '');
   };
 
 
