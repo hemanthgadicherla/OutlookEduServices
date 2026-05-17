@@ -449,7 +449,10 @@ const updateMe = async (req, res) => {
     });
   }
 
-  return res.json({ success: true, user });
+  // Issue a fresh JWT so full_name in the token stays in sync
+  const token = signToken(user);
+
+  return res.json({ success: true, user, token });
 };
 
 

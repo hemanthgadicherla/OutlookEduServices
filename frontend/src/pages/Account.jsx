@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { FaUser, FaEnvelope, FaPhone, FaEdit, FaSave, FaTimes, FaBookOpen, FaSignOutAlt } from 'react-icons/fa';
 import { userAuthAPI } from '../services/api';
-import { getUser, logout as clearTokens } from '../utils/auth';
+import { getUser, logout as clearTokens, setUserProfile } from '../utils/auth';
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
@@ -35,6 +35,11 @@ const Account = () => {
       if (res.success) {
         setProfile(res.user);
         reset({ full_name: res.user.full_name, phone: res.user.phone || '' });
+      } else if (res.message === 'Invalid or expired token' || res.message === 'Access denied' || res.message === 'Token missing') {
+        // Token is stale (e.g. JWT_SECRET rotated) — clear it and send to login
+        clearTokens();
+        toast.error('Your session has expired. Please log in again.');
+        navigate('/login', { replace: true });
       } else {
         toast.error('Could not load profile');
       }
@@ -56,6 +61,19 @@ const Account = () => {
       if (res.success) {
         setProfile(res.user);
         setEditing(false);
+
+        // Persist updated name (and avatar_url if present) so Navbar
+        // reflects the change immediately without a page reload or new JWT
+        setUserProfile({
+          full_name:  res.user.full_name,
+          avatar_url: res.user.avatar_url || null
+        });
+
+        // If the backend issued a fresh token, store it so the JWT stays in sync
+        if (res.token) {
+          localStorage.setItem('userToken', res.token);
+        }
+
         toast.success('Profile updated');
       } else {
         toast.error(res.message || 'Update failed');
@@ -82,6 +100,10 @@ const Account = () => {
   const avatarLetter = profile
     ? (profile.full_name?.[0] || profile.email?.[0] || 'U').toUpperCase()
     : 'U';
+
+  const avatarContent = profile?.avatar_url
+    ? <img src={profile.avatar_url} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+    : avatarLetter;
 
   const roleBadge = {
     admin:   { label: 'Admin',   bg: '#dc3545' },
@@ -111,10 +133,10 @@ const Account = () => {
 
               {/* avatar */}
               <div
-                className="mx-auto mb-3 d-flex align-items-center justify-content-center fw-bold text-white"
+                className="mx-auto mb-3 d-flex align-items-center justify-content-center fw-bold text-white overflow-hidden"
                 style={{ width: 90, height: 90, borderRadius: '50%', background: 'linear-gradient(135deg,#0d6efd,#6610f2)', fontSize: 36 }}
               >
-                {avatarLetter}
+                {avatarContent}
               </div>
 
               <h5 className="fw-bold mb-1">{profile?.full_name || '—'}</h5>

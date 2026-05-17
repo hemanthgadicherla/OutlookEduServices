@@ -28,6 +28,13 @@ const Navbar = () => {
     setDropdownOpen(false);
   }, [location.pathname]);
 
+  // ── re-read user when profile is updated from Account page ───
+  useEffect(() => {
+    const handler = () => setUser(getUser());
+    window.addEventListener('userProfileUpdated', handler);
+    return () => window.removeEventListener('userProfileUpdated', handler);
+  }, []);
+
   // ── close dropdown on outside click ──────────────────────────
   useEffect(() => {
     const handler = (e) => {
@@ -61,6 +68,19 @@ const Navbar = () => {
   const avatarLetter = user
     ? (user.full_name?.[0] || user.email?.[0] || 'U').toUpperCase()
     : '';
+
+  // Show photo if available, otherwise show initial letter
+  const AvatarCircle = ({ size = 30, fontSize = 13 }) => (
+    <span
+      className="d-flex align-items-center justify-content-center fw-bold overflow-hidden"
+      style={{ width: size, height: size, borderRadius: '50%', background: '#0d6efd', fontSize, flexShrink: 0, color: '#fff' }}
+    >
+      {user?.avatar_url
+        ? <img src={user.avatar_url} alt={user.full_name || 'avatar'} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+        : avatarLetter
+      }
+    </span>
+  );
 
   return (
     <motion.nav
@@ -143,12 +163,7 @@ const Navbar = () => {
                     aria-expanded={dropdownOpen}
                     aria-haspopup="true"
                   >
-                    <span
-                      className="d-flex align-items-center justify-content-center fw-bold"
-                      style={{ width: 30, height: 30, borderRadius: '50%', background: '#0d6efd', fontSize: 13, flexShrink: 0 }}
-                    >
-                      {avatarLetter}
-                    </span>
+                    <AvatarCircle size={30} fontSize={13} />
                     <span className="small" style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {user.full_name || user.email}
                     </span>                    <FaChevronDown
@@ -218,12 +233,7 @@ const Navbar = () => {
                 {/* mobile: avatar row + links */}
                 <div className="d-flex d-lg-none flex-column w-100 gap-2 mt-2">
                   <div className="d-flex align-items-center gap-2 px-1 text-white small">
-                    <span
-                      className="d-flex align-items-center justify-content-center fw-bold"
-                      style={{ width: 28, height: 28, borderRadius: '50%', background: '#0d6efd', fontSize: 12, flexShrink: 0 }}
-                    >
-                      {avatarLetter}
-                    </span>
+                    <AvatarCircle size={28} fontSize={12} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {user.full_name || user.email}
                     </span>

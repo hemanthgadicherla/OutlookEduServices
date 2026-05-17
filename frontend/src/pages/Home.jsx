@@ -109,37 +109,6 @@ const Home = () => {
           marginTop: "-1px",
         }}
       >
-      {/* BACKGROUND VIDEO */}
-
-        <video
-
-          autoPlay
-
-          muted
-
-          loop
-
-          playsInline
-
-          className="position-absolute w-100 h-100"
-
-          style={{
-            objectFit: "cover",
-            top: 0,
-            left: 0,
-            zIndex: 1,
-            filter:
-              "blur(2px) brightness(0.35)",
-          }}
-        >
-        {/* TEMP VIDEO */}
-
-        <source
-          src="https://cdn.coverr.co/videos/coverr-students-working-together-1560085555468?download=1080p"
-          type="video/mp4"
-        />
-
-        </video>
 
         {/* DARK OVERLAY */}
 
