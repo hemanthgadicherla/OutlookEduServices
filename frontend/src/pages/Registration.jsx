@@ -232,6 +232,34 @@ const Registration = () => {
                     </div>
                   </div>
 
+                  {/* T&C + Privacy Policy checkbox */}
+                  <div className="mb-4">
+                    <div className="form-check">
+                      <input
+                        id="reg_terms"
+                        type="checkbox"
+                        className={`form-check-input ${errors.terms ? 'is-invalid' : ''}`}
+                        {...register('terms', {
+                          required: 'You must accept the Terms & Conditions to continue'
+                        })}
+                      />
+                      <label className="form-check-label small" htmlFor="reg_terms">
+                        I have read and agree to the{' '}
+                        <Link to="/terms-and-conditions" target="_blank" className="text-primary fw-semibold">
+                          Terms &amp; Conditions
+                        </Link>{' '}
+                        and{' '}
+                        <Link to="/privacy-policy" target="_blank" className="text-primary fw-semibold">
+                          Privacy Policy
+                        </Link>
+                        <span className="text-danger"> *</span>
+                      </label>
+                      {errors.terms && (
+                        <div className="invalid-feedback">{errors.terms.message}</div>
+                      )}
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     className="btn btn-primary w-100 py-2"

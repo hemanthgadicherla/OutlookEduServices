@@ -544,9 +544,38 @@ const CourseRegistration = () => {
                     />
                   </div>
 
-                  <div className="d-flex align-items-center gap-2 text-muted small mb-4 p-3 bg-light rounded border">
+                  <div className="d-flex align-items-center gap-2 text-muted small mb-3 p-3 bg-light rounded border">
                     <FaLock className="text-success flex-shrink-0" />
                     <span>Payments are processed securely via Razorpay. We never store your card details.</span>
+                  </div>
+
+                  {/* T&C + Privacy Policy checkbox */}
+                  <div className="mb-4">
+                    <div className="form-check">
+                      <input
+                        id="cr_terms"
+                        type="checkbox"
+                        className={`form-check-input ${errors.terms ? 'is-invalid' : ''}`}
+                        disabled={isLoading}
+                        {...register('terms', {
+                          required: 'You must accept the Terms & Conditions to proceed'
+                        })}
+                      />
+                      <label className="form-check-label small" htmlFor="cr_terms">
+                        I have read and agree to the{' '}
+                        <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="text-primary fw-semibold">
+                          Terms &amp; Conditions
+                        </a>{' '}
+                        and{' '}
+                        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary fw-semibold">
+                          Privacy Policy
+                        </a>
+                        <span className="text-danger"> *</span>
+                      </label>
+                      {errors.terms && (
+                        <div className="invalid-feedback d-block">{errors.terms.message}</div>
+                      )}
+                    </div>
                   </div>
 
                   <button

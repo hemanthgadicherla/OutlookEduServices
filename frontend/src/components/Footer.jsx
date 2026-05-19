@@ -138,9 +138,25 @@ const Footer = () => {
         <hr className="my-4" style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
 
         {/* Copyright — centered */}
-        <p className="text-center mb-0" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
-          &copy; 2026 Outlook Edu Services. All rights reserved.
-        </p>
+        <div className="text-center">
+          <p className="mb-2" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
+            &copy; 2026 Outlook Edu Services. All rights reserved.
+          </p>
+          <div className="d-flex justify-content-center gap-3 flex-wrap">
+            <Link to="/terms-and-conditions" style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', textDecoration: 'none' }}
+              onMouseEnter={e => e.target.style.color = '#facc15'}
+              onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.45)'}
+            >Terms &amp; Conditions</Link>
+            <Link to="/privacy-policy" style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', textDecoration: 'none' }}
+              onMouseEnter={e => e.target.style.color = '#facc15'}
+              onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.45)'}
+            >Privacy Policy</Link>
+            <Link to="/cookie-policy" style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', textDecoration: 'none' }}
+              onMouseEnter={e => e.target.style.color = '#facc15'}
+              onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.45)'}
+            >Cookie Policy</Link>
+          </div>
+        </div>
 
       </div>
     </footer>

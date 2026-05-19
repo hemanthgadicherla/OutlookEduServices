@@ -40,6 +40,10 @@ import AdminSignup from "./pages/AdminSignup";
 import LMSDashboard from "./pages/LMSDashboard";
 import AuthCallback from "./pages/AuthCallback";
 import Account from "./pages/Account";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CookiePolicy from "./pages/CookiePolicy";
+import CookieConsent from "./components/CookieConsent";
 
 function App() {
   const location    = useLocation();
@@ -88,6 +92,11 @@ function App() {
           <Route path="/lms"                       element={<LMSDashboard />} />
           <Route path="/account"                   element={<Account />} />
 
+          {/* Legal */}
+          <Route path="/terms-and-conditions"      element={<TermsAndConditions />} />
+          <Route path="/privacy-policy"            element={<PrivacyPolicy />} />
+          <Route path="/cookie-policy"             element={<CookiePolicy />} />
+
           {/* Admin — public pages (no protection) */}
           <Route path="/admin/login"     element={<AdminLogin />} />
           <Route path="/admin/signup"    element={<AdminSignup />} />
@@ -102,6 +111,8 @@ function App() {
         </Routes>
 
         {!shouldHideFooter && <Footer />}
+
+        <CookieConsent />
 
         <ToastContainer />
 
