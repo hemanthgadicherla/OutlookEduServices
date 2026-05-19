@@ -1,9 +1,26 @@
-const express = require('express');
-const router  = express.Router();
+const express    = require('express');
+const router     = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
-const { getUserCourses } = require('../controllers/lms');
+const {
+  getUserCourses,
+  getCourseContent,
+  updateProgress,
+  getStats,
+  getCertificates,
+  generateCertificate,
+  getNotifications,
+  markNotificationRead
+} = require('../controllers/lms');
 
-// Protected — user must be logged in
-router.get('/courses', verifyToken, getUserCourses);
+router.use(verifyToken); // all LMS routes require auth
+
+router.get('/courses',                  getUserCourses);
+router.get('/course/:id',               getCourseContent);
+router.post('/progress',                updateProgress);
+router.get('/stats',                    getStats);
+router.get('/certificates',             getCertificates);
+router.post('/certificate/generate',    generateCertificate);
+router.get('/notifications',            getNotifications);
+router.patch('/notifications/:id/read', markNotificationRead);
 
 module.exports = router;

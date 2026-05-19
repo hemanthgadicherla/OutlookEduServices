@@ -21,7 +21,8 @@
     "bootstrap": "^5.3.0",
     "react-bootstrap": "^2.8.0",
     "@supabase/supabase-js": "^2.26.0",
-    "swiper": "^12.1.4"
+    "swiper": "^12.1.4",
+    "lucide-react": "^0.441.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",

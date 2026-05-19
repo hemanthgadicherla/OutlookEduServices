@@ -58,7 +58,7 @@ const CookieConsent = () => {
                   We use cookies to enhance your browsing experience, analyse site traffic, and
                   personalise content. By clicking <strong>"OK"</strong>, you consent to our use
                   of cookies.{' '}
-                  <Link
+                  {/* <Link
                     to="/cookie-policy"
                     style={{ color: '#facc15', textDecoration: 'underline' }}
                     onClick={handleAccept}
@@ -72,7 +72,7 @@ const CookieConsent = () => {
                     onClick={handleAccept}
                   >
                     Privacy Policy
-                  </Link>
+                  </Link> */}
                 </p>
               </div>
 

@@ -614,10 +614,61 @@ export const lmsAPI = {
   getCourses: async (userId) => {
     const token = localStorage.getItem('userToken');
     const response = await fetch(`${API_BASE_URL}/lms/courses?user_id=${userId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` })
-      }
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
+  getCourseContent: async (courseId) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/course/${courseId}`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
+  updateProgress: async (lessonId, completed, watchedSeconds = 0) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/progress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ lesson_id: lessonId, completed, watched_seconds: watchedSeconds })
+    });
+    return await response.json();
+  },
+  getStats: async () => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/stats`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
+  getCertificates: async () => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/certificates`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
+  generateCertificate: async (courseId) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/certificate/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ course_id: courseId })
+    });
+    return await response.json();
+  },
+  getNotifications: async () => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/notifications`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
+  markNotificationRead: async (id) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/notifications/${id}/read`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
     });
     return await response.json();
   }

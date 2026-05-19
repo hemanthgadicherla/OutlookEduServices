@@ -73,18 +73,21 @@ h1, h2, h3, h4, h5, h6 {
 
 .App {
   min-height: 100vh;
+}
+
+/* Only public pages (with fixed Navbar) need top padding */
+.public-layout {
   padding-top: 90px;
 }
 
 @media (max-width: 768px) {
-  .App {
+  .public-layout {
     padding-top: 110px;
   }
 }
 
 .navbar {
   z-index: 1050;
-  margin-bottom: 200px;
 }
 
 /* Glassmorphism */

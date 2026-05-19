@@ -30,7 +30,7 @@ const TermsAndConditions = () => {
       </div>
 
       {/* Content */}
-      <div className="container py-5">
+      {/* <div className="container py-5">
         <div className="row justify-content-center">
           <div className="col-lg-8">
             <div className="card border-0 shadow-sm p-4 p-md-5">
@@ -169,7 +169,7 @@ const TermsAndConditions = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
