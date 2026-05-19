@@ -200,9 +200,28 @@ const LMSDashboard = () => {
   // ── Gate: user has no purchased courses ──────────────────────
   if (!loading && courses.length === 0) {
     return (
-      <div className="d-flex" style={{ minHeight: '100vh', background: '#0f172a' }}>
-        <LMSSidebar notifCount={notifCount} />
-        <main className="flex-grow-1 d-flex align-items-center justify-content-center p-3 p-lg-4" style={{ minWidth: 0 }}>
+      <div style={{ minHeight: '100vh', background: '#0f172a' }}>
+        {/* Top bar with logo + nav links */}
+        <div className="d-flex align-items-center justify-content-between px-4 py-3"
+          style={{ background: '#1e293b', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <Link to="/">
+            <img
+              src="https://res.cloudinary.com/du1lrb3ng/image/upload/v1777891872/Outlook_logo_lux4gu.png"
+              alt="Outlook Edu Services"
+              style={{ height: 44, objectFit: 'contain' }}
+            />
+          </Link>
+          <div className="d-flex align-items-center gap-3">
+            <Link to="/"        style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, textDecoration: 'none' }}>Home</Link>
+            <Link to="/courses" style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, textDecoration: 'none' }}>Courses</Link>
+            <Link to="/contact" style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, textDecoration: 'none' }}>Contact</Link>
+            <Link to="/account" style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, textDecoration: 'none' }}>Account</Link>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="d-flex align-items-center justify-content-center p-3 p-lg-4"
+          style={{ minHeight: 'calc(100vh - 70px)' }}>
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -261,7 +280,7 @@ const LMSDashboard = () => {
               </button>
             </p>
           </motion.div>
-        </main>
+        </div>
       </div>
     );
   }
