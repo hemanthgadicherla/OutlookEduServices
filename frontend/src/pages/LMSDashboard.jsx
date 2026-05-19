@@ -197,6 +197,75 @@ const LMSDashboard = () => {
 
   if (!user) return null;
 
+  // ── Gate: user has no purchased courses ──────────────────────
+  if (!loading && courses.length === 0) {
+    return (
+      <div className="d-flex" style={{ minHeight: '100vh', background: '#0f172a' }}>
+        <LMSSidebar notifCount={notifCount} />
+        <main className="flex-grow-1 d-flex align-items-center justify-content-center p-3 p-lg-4" style={{ minWidth: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
+            style={{ maxWidth: 560 }}
+          >
+            {/* Illustration */}
+            <div className="mb-4 mx-auto d-flex align-items-center justify-content-center"
+              style={{ width: 120, height: 120, borderRadius: '50%', background: 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.2))', border: '2px solid rgba(99,102,241,0.3)' }}>
+              <FaBookOpen size={48} style={{ color: '#818cf8' }} />
+            </div>
+
+            <h3 className="fw-bold text-white mb-2">No Courses Yet</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 1.8, marginBottom: 32 }}>
+              You haven't purchased any courses yet. Explore our catalog and start your learning journey today.
+            </p>
+
+            {/* Feature highlights */}
+            <div className="row g-3 mb-4 text-start">
+              {[
+                { icon: '🎓', title: 'Expert-Led Courses',    desc: 'Learn from industry professionals' },
+                { icon: '📜', title: 'Earn Certificates',     desc: 'Get certified upon completion'     },
+                { icon: '⚡', title: 'Learn at Your Pace',    desc: 'Access anytime, anywhere'          },
+              ].map(({ icon, title, desc }) => (
+                <div key={title} className="col-12 col-sm-4">
+                  <div className="rounded-3 p-3 text-center h-100"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>{icon}</div>
+                    <div className="fw-semibold text-white" style={{ fontSize: 13 }}>{title}</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA buttons */}
+            <div className="d-flex gap-3 justify-content-center flex-wrap">
+              <Link to="/courses"
+                className="btn rounded-3 px-4 py-2 fw-semibold d-flex align-items-center gap-2"
+                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: 15 }}>
+                <FaBookOpen size={15} />
+                Browse Courses
+              </Link>
+              <Link to="/contact"
+                className="btn rounded-3 px-4 py-2 fw-semibold"
+                style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 15 }}>
+                Talk to Counsellor
+              </Link>
+            </div>
+
+            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, marginTop: 24 }}>
+              Already purchased a course?{' '}
+              <button onClick={fetchAll} style={{ background: 'none', border: 'none', color: '#818cf8', fontSize: 12, cursor: 'pointer', padding: 0 }}>
+                Refresh
+              </button>
+            </p>
+          </motion.div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="d-flex" style={{ minHeight: '100vh', background: '#0f172a' }}>
       <LMSSidebar notifCount={notifCount} />
