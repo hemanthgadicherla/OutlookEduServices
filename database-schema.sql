@@ -27,6 +27,7 @@ DROP TABLE IF EXISTS blog_subscribers  CASCADE;
 DROP TABLE IF EXISTS leads             CASCADE;
 DROP TABLE IF EXISTS blogs             CASCADE;
 DROP TABLE IF EXISTS courses           CASCADE;
+DROP TABLE IF EXISTS admins            CASCADE;
 DROP TABLE IF EXISTS users             CASCADE;
 
 DROP TYPE IF EXISTS user_role            CASCADE;
@@ -37,9 +38,6 @@ DROP TYPE IF EXISTS lead_source          CASCADE;
 
 -- ================================================================
 -- SECTION 2 — ENUM TYPES
--- DB-level constraints — invalid values are rejected before they
--- ever reach application code.
--- To add a value later: ALTER TYPE <type> ADD VALUE 'new_val';
 -- ================================================================
 
 CREATE TYPE user_role AS ENUM (
@@ -62,10 +60,10 @@ CREATE TYPE payment_order_status AS ENUM (
 );
 
 CREATE TYPE lead_source AS ENUM (
-  'popup',          -- lead popup on site
-  'contact_page',   -- /contact form
-  'course_page',    -- enquiry from a course page
-  'study_abroad',   -- study abroad section
+  'popup',
+  'contact_page',
+  'course_page',
+  'study_abroad',
   'other'
 );
 
@@ -88,23 +86,51 @@ $$;
 -- ================================================================
 
 -- ----------------------------------------------------------------
+-- ADMINS
+-- Completely separate from users table.
+-- Admin login reads ONLY from this table.
+-- session_id = used for single-device session enforcement.
+-- ----------------------------------------------------------------
+CREATE TABLE admins (
+  id          UUID         PRIMARY KEY,  -- matches auth.users.id
+  email       VARCHAR(255) NOT NULL UNIQUE,
+  full_name   VARCHAR(100) NOT NULL DEFAULT '',
+  phone       VARCHAR(15)  UNIQUE,
+  role        VARCHAR(20)  NOT NULL DEFAULT 'admin',
+  is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
+  last_login  TIMESTAMPTZ,
+  session_id  VARCHAR(64),               -- single-device session token
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER admins_updated_at
+  BEFORE UPDATE ON admins
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+ALTER TABLE admins DISABLE ROW LEVEL SECURITY;
+
+CREATE INDEX idx_admins_email      ON admins (email);
+CREATE INDEX idx_admins_is_active  ON admins (is_active);
+CREATE INDEX idx_admins_session_id ON admins (session_id);
+
+
+-- ----------------------------------------------------------------
 -- USERS
--- Single source of truth for every authenticated user.
--- id         = Supabase Auth UUID — set on first login/register.
--- avatar_url = populated from Google OAuth or manual upload.
--- is_active  = soft-disable without touching Supabase Auth.
--- last_login = updated on every successful login for audit trail.
+-- Regular users only — no admin rows stored here.
+-- session_id = used for single-device session enforcement.
 -- ----------------------------------------------------------------
 CREATE TABLE users (
   id              UUID         PRIMARY KEY,  -- matches auth.users.id
   email           VARCHAR(255) NOT NULL UNIQUE,
   full_name       VARCHAR(100) NOT NULL DEFAULT '',
-  phone           VARCHAR(15)  UNIQUE,       -- optional, unique when set
-  avatar_url      TEXT,                      -- profile picture URL
+  phone           VARCHAR(15)  UNIQUE,
+  avatar_url      TEXT,
   role            user_role    NOT NULL DEFAULT 'user',
   is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
   email_verified  BOOLEAN      NOT NULL DEFAULT FALSE,
   last_login      TIMESTAMPTZ,
+  session_id      VARCHAR(64),               -- single-device session token
   created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
@@ -113,30 +139,25 @@ CREATE TRIGGER users_updated_at
   BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- Service role bypasses RLS; disable to prevent accidental policy blocks
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 
-CREATE INDEX idx_users_role      ON users (role);
-CREATE INDEX idx_users_is_active ON users (is_active);
+CREATE INDEX idx_users_role       ON users (role);
+CREATE INDEX idx_users_is_active  ON users (is_active);
+CREATE INDEX idx_users_session_id ON users (session_id);
 
 
 -- ----------------------------------------------------------------
 -- COURSES
--- slug        = SEO-friendly URL: /courses/ielts-preparation
--- category    = filter/group courses on the frontend
--- is_published = TRUE  → Active   (visible with enroll button)
---               FALSE → Upcoming (visible as "Coming Soon", no enroll)
--- enrolled_count = cached counter updated by trigger
 -- ----------------------------------------------------------------
 CREATE TABLE courses (
   id               SERIAL        PRIMARY KEY,
   title            VARCHAR(255)  NOT NULL,
-  slug             VARCHAR(255)  UNIQUE,      -- e.g. ielts-preparation
-  description      TEXT,                      -- short card summary
-  full_description TEXT,                      -- long detail page content
+  slug             VARCHAR(255)  UNIQUE,
+  description      TEXT,
+  full_description TEXT,
   price            NUMERIC(10,2) NOT NULL CHECK (price >= 0),
   image            TEXT,
-  category         VARCHAR(100),              -- e.g. 'Language', 'Tech', 'Finance'
+  category         VARCHAR(100),
   is_published     BOOLEAN       NOT NULL DEFAULT TRUE,
   enrolled_count   INTEGER       NOT NULL DEFAULT 0,
   created_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
@@ -154,8 +175,6 @@ CREATE INDEX idx_courses_published ON courses (is_published);
 
 -- ----------------------------------------------------------------
 -- COURSE MODULES
--- Groups lessons inside a course (e.g. "Week 1 — Foundations").
--- position controls display order.
 -- ----------------------------------------------------------------
 CREATE TABLE course_modules (
   id         SERIAL       PRIMARY KEY,
@@ -175,16 +194,13 @@ CREATE INDEX idx_course_modules_course_id ON course_modules (course_id);
 
 -- ----------------------------------------------------------------
 -- COURSE LESSONS
--- Individual video/text lessons inside a module.
--- is_free = true allows preview without payment (marketing tool).
--- video_url = Cloudinary / YouTube / Vimeo URL.
 -- ----------------------------------------------------------------
 CREATE TABLE course_lessons (
   id          SERIAL       PRIMARY KEY,
   module_id   INTEGER      NOT NULL REFERENCES course_modules(id) ON DELETE CASCADE,
   title       VARCHAR(255) NOT NULL,
   video_url   TEXT,
-  content     TEXT,                     -- optional text/markdown notes
+  content     TEXT,
   position    SMALLINT     NOT NULL DEFAULT 0,
   is_free     BOOLEAN      NOT NULL DEFAULT FALSE,
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -200,11 +216,6 @@ CREATE INDEX idx_course_lessons_module_id ON course_lessons (module_id);
 
 -- ----------------------------------------------------------------
 -- REGISTRATIONS
--- student_name   = snapshot of name at registration time
---   (denormalised on purpose — user may rename later).
--- user_id        = FK to users when the student is logged in.
--- course_id      = FK for relational integrity.
--- selected_course = text snapshot so renames don't break history.
 -- ----------------------------------------------------------------
 CREATE TABLE registrations (
   id              SERIAL         PRIMARY KEY,
@@ -213,11 +224,11 @@ CREATE TABLE registrations (
   email           VARCHAR(255)   NOT NULL,
   phone           VARCHAR(15)    NOT NULL,
   course_id       INTEGER        REFERENCES courses(id) ON DELETE SET NULL,
-  selected_course VARCHAR(255)   NOT NULL,  -- display name snapshot
+  selected_course VARCHAR(255)   NOT NULL,
   country         VARCHAR(100),
   message         TEXT,
   payment_status  payment_status NOT NULL DEFAULT 'pending',
-  payment_id      VARCHAR(255),             -- Razorpay payment ID on success
+  payment_id      VARCHAR(255),
   created_at      TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ    NOT NULL DEFAULT NOW()
 );
@@ -234,19 +245,16 @@ CREATE INDEX idx_registrations_course_id      ON registrations (course_id);
 
 -- ----------------------------------------------------------------
 -- PAYMENTS
--- One row per Razorpay order.
--- currency   = INR now; ready for international expansion.
--- refund_id  = Razorpay refund ID when a refund is issued.
 -- ----------------------------------------------------------------
 CREATE TABLE payments (
   id                   SERIAL               PRIMARY KEY,
   razorpay_order_id    VARCHAR(255)         NOT NULL UNIQUE,
   razorpay_payment_id  VARCHAR(255),
-  razorpay_signature   VARCHAR(512),        -- stored for audit
+  razorpay_signature   VARCHAR(512),
   amount               NUMERIC(10,2)        NOT NULL CHECK (amount > 0),
   currency             VARCHAR(3)           NOT NULL DEFAULT 'INR',
   status               payment_order_status NOT NULL DEFAULT 'created',
-  refund_id            VARCHAR(255),        -- Razorpay refund ID
+  refund_id            VARCHAR(255),
   registration_id      INTEGER              REFERENCES registrations(id) ON DELETE SET NULL,
   created_at           TIMESTAMPTZ          NOT NULL DEFAULT NOW(),
   updated_at           TIMESTAMPTZ          NOT NULL DEFAULT NOW()
@@ -262,16 +270,13 @@ CREATE INDEX idx_payments_status          ON payments (status);
 
 -- ----------------------------------------------------------------
 -- COUPONS
--- Discount codes for marketing campaigns.
--- discount_type: 'percent' (10%) or 'flat' (₹500 off).
--- max_uses NULL = unlimited.
 -- ----------------------------------------------------------------
 CREATE TABLE coupons (
   id              SERIAL        PRIMARY KEY,
   code            VARCHAR(50)   NOT NULL UNIQUE,
   discount_type   VARCHAR(10)   NOT NULL DEFAULT 'percent' CHECK (discount_type IN ('percent','flat')),
   discount_value  NUMERIC(10,2) NOT NULL CHECK (discount_value > 0),
-  max_uses        INTEGER,                  -- NULL = unlimited
+  max_uses        INTEGER,
   uses_count      INTEGER       NOT NULL DEFAULT 0,
   expires_at      TIMESTAMPTZ,
   is_active       BOOLEAN       NOT NULL DEFAULT TRUE,
@@ -284,8 +289,6 @@ CREATE INDEX idx_coupons_is_active ON coupons (is_active);
 
 -- ----------------------------------------------------------------
 -- COUPON USES
--- Tracks which user used which coupon on which registration.
--- Prevents double-use per user per coupon.
 -- ----------------------------------------------------------------
 CREATE TABLE coupon_uses (
   id              SERIAL      PRIMARY KEY,
@@ -293,7 +296,7 @@ CREATE TABLE coupon_uses (
   user_id         UUID        REFERENCES users(id) ON DELETE SET NULL,
   registration_id INTEGER     REFERENCES registrations(id) ON DELETE SET NULL,
   used_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (coupon_id, user_id)   -- one use per user per coupon
+  UNIQUE (coupon_id, user_id)
 );
 
 CREATE INDEX idx_coupon_uses_coupon_id ON coupon_uses (coupon_id);
@@ -302,8 +305,6 @@ CREATE INDEX idx_coupon_uses_user_id   ON coupon_uses (user_id);
 
 -- ----------------------------------------------------------------
 -- USER COURSES  (LMS access junction table)
--- Row created when payment_status is set to 'paid'.
--- UNIQUE(user_id, course_id) prevents duplicate access rows.
 -- ----------------------------------------------------------------
 CREATE TABLE user_courses (
   id             SERIAL         PRIMARY KEY,
@@ -320,8 +321,6 @@ CREATE INDEX idx_user_courses_course_id ON user_courses (course_id);
 
 -- ----------------------------------------------------------------
 -- LESSON PROGRESS
--- Tracks per-student per-lesson completion for LMS progress bars.
--- watched_seconds = resume-where-you-left-off support.
 -- ----------------------------------------------------------------
 CREATE TABLE lesson_progress (
   id               SERIAL      PRIMARY KEY,
@@ -344,8 +343,6 @@ CREATE INDEX idx_lesson_progress_lesson_id ON lesson_progress (lesson_id);
 
 -- ----------------------------------------------------------------
 -- CERTIFICATES
--- Issued when a student completes all lessons in a course.
--- certificate_url = Cloudinary PDF or image URL.
 -- ----------------------------------------------------------------
 CREATE TABLE certificates (
   id               SERIAL      PRIMARY KEY,
@@ -362,8 +359,6 @@ CREATE INDEX idx_certificates_course_id ON certificates (course_id);
 
 -- ----------------------------------------------------------------
 -- COURSE REVIEWS
--- One review per student per course.
--- rating 1–5 enforced by CHECK constraint.
 -- ----------------------------------------------------------------
 CREATE TABLE course_reviews (
   id         SERIAL      PRIMARY KEY,
@@ -385,9 +380,6 @@ CREATE INDEX idx_course_reviews_course_id ON course_reviews (course_id);
 
 -- ----------------------------------------------------------------
 -- BLOGS
--- All columns match the backend Joi validation schema exactly.
--- is_published = draft mode.
--- views        = cached read counter (increment on GET).
 -- ----------------------------------------------------------------
 CREATE TABLE blogs (
   id           SERIAL       PRIMARY KEY,
@@ -410,15 +402,13 @@ CREATE TRIGGER blogs_updated_at
   BEFORE UPDATE ON blogs
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-CREATE INDEX idx_blogs_slug        ON blogs (slug);
-CREATE INDEX idx_blogs_category    ON blogs (category);
-CREATE INDEX idx_blogs_published   ON blogs (is_published);
+CREATE INDEX idx_blogs_slug      ON blogs (slug);
+CREATE INDEX idx_blogs_category  ON blogs (category);
+CREATE INDEX idx_blogs_published ON blogs (is_published);
 
 
 -- ----------------------------------------------------------------
 -- LEADS
--- source      = where the lead came from (ENUM).
--- assigned_to = admin user (UUID) handling this lead.
 -- ----------------------------------------------------------------
 CREATE TABLE leads (
   id          SERIAL       PRIMARY KEY,
@@ -429,7 +419,7 @@ CREATE TABLE leads (
   message     TEXT,
   source      lead_source  NOT NULL DEFAULT 'other',
   contacted   BOOLEAN      NOT NULL DEFAULT FALSE,
-  assigned_to UUID         REFERENCES users(id) ON DELETE SET NULL,
+  assigned_to UUID         REFERENCES admins(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
@@ -450,7 +440,6 @@ CREATE TABLE blog_subscribers (
 
 -- ----------------------------------------------------------------
 -- NOTIFICATIONS
--- In-app alerts per user (payment confirmed, new course, etc.).
 -- ----------------------------------------------------------------
 CREATE TABLE notifications (
   id         SERIAL       PRIMARY KEY,
@@ -467,16 +456,14 @@ CREATE INDEX idx_notifications_is_read ON notifications (user_id, is_read);
 
 -- ----------------------------------------------------------------
 -- AUDIT LOGS
--- Immutable record of every admin action.
--- old_data / new_data = JSONB snapshots before and after change.
--- Never delete rows from this table.
+-- References admins table since only admins perform audited actions.
 -- ----------------------------------------------------------------
 CREATE TABLE audit_logs (
   id          SERIAL       PRIMARY KEY,
-  admin_id    UUID         REFERENCES users(id) ON DELETE SET NULL,
-  action      VARCHAR(50)  NOT NULL,   -- e.g. 'UPDATE', 'DELETE', 'LOGIN'
+  admin_id    UUID         REFERENCES admins(id) ON DELETE SET NULL,
+  action      VARCHAR(50)  NOT NULL,
   table_name  VARCHAR(100),
-  record_id   TEXT,                    -- TEXT to handle both INT and UUID PKs
+  record_id   TEXT,
   old_data    JSONB,
   new_data    JSONB,
   ip_address  INET,
@@ -490,7 +477,6 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs (created_at DESC);
 
 -- ================================================================
 -- SECTION 5 — TRIGGER: auto-increment enrolled_count on courses
--- Fires when a user_courses row is inserted (payment confirmed).
 -- ================================================================
 CREATE OR REPLACE FUNCTION increment_enrolled_count()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
