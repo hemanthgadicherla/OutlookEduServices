@@ -1,3 +1,4 @@
+const crypto   = require('crypto');
 const supabase = require('../config/supabase');
 const { supabaseAnon, supabaseUrl, serviceRoleKey } = require('../config/supabase');
 const jwt = require('jsonwebtoken');
@@ -108,13 +109,15 @@ const upsertUser = async (id, email, full_name, phone = null) => {
 };
 
 // full_name included so Navbar can read it from JWT without an API call
-const signToken = (user) =>
+// session_id is used to invalidate all other active sessions on new login
+const signToken = (user, sessionId) =>
   jwt.sign(
     {
-      id:        user.id,
-      email:     user.email,
-      role:      user.role,
-      full_name: user.full_name || ''
+      id:         user.id,
+      email:      user.email,
+      role:       user.role,
+      full_name:  user.full_name || '',
+      session_id: sessionId
     },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES || '7d' }
@@ -161,16 +164,17 @@ const login = async (req, res) => {
 
   const user = await upsertUser(supaUser.id, supaUser.email, full_name, phone);
 
-  // fire-and-forget last_login update
-  supabase
+  // Generate a new session_id — invalidates all previous sessions for this user
+  const sessionId = crypto.randomBytes(32).toString('hex');
+
+  // Store session_id in DB — any token with a different session_id will be rejected
+  await supabase
     .from('users')
-    .update({ last_login: new Date().toISOString() })
-    .eq('id', user.id)
-    .then(() => {})
-    .catch(() => {});
+    .update({ session_id: sessionId, last_login: new Date().toISOString() })
+    .eq('id', user.id);
 
   if (user.role === 'admin') {
-    const token = signToken(user);
+    const token = signToken(user, sessionId);
     return res.json({
       success: true,
       token,
@@ -180,7 +184,7 @@ const login = async (req, res) => {
   }
 
   const { role, redirect } = await resolveAccess(user.id);
-  const token = signToken({ ...user, role });
+  const token = signToken({ ...user, role }, sessionId);
 
   return res.json({ success: true, token, role, redirect });
 };
@@ -282,7 +286,11 @@ const register = async (req, res) => {
 
   // ── create users table row ───────────────────────────────────
   const user = await upsertUser(data.user.id, email, full_name, phone);
-  const token = signToken(user);
+
+  const sessionId = crypto.randomBytes(32).toString('hex');
+  await supabase.from('users').update({ session_id: sessionId }).eq('id', user.id);
+
+  const token = signToken(user, sessionId);
 
   return res.status(201).json({
     success: true,
@@ -339,12 +347,11 @@ const googleOAuthCallback = async (req, res) => {
 
   const user = await upsertUser(supaUser.id, supaUser.email, full_name);
 
-  supabase
+  const sessionId = crypto.randomBytes(32).toString('hex');
+  await supabase
     .from('users')
-    .update({ last_login: new Date().toISOString() })
-    .eq('id', user.id)
-    .then(() => {})
-    .catch(() => {});
+    .update({ session_id: sessionId, last_login: new Date().toISOString() })
+    .eq('id', user.id);
 
   let role = user.role;
   let redirect = '/admin/dashboard';
@@ -355,7 +362,7 @@ const googleOAuthCallback = async (req, res) => {
     redirect = access.redirect;
   }
 
-  const token = signToken({ ...user, role });
+  const token = signToken({ ...user, role }, sessionId);
 
   return res.redirect(
     `${process.env.FRONTEND_URL}/auth/callback?token=${token}&role=${role}&redirect=${encodeURIComponent(redirect)}`
@@ -449,8 +456,8 @@ const updateMe = async (req, res) => {
     });
   }
 
-  // Issue a fresh JWT so full_name in the token stays in sync
-  const token = signToken(user);
+  // Issue a fresh JWT keeping the same session_id so the current device stays logged in
+  const token = signToken(user, req.user.session_id);
 
   return res.json({ success: true, user, token });
 };

@@ -16,6 +16,7 @@ import LeadPopup from './components/LeadPopup';
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AuthHandler from "./components/AuthHandler";
 import CookieConsent from "./components/CookieConsent";
+import SessionGuard from "./components/SessionGuard";
 
 // Public pages
 import Home from './pages/Home';
@@ -80,6 +81,7 @@ function App() {
       <div className="App">
 
         <AuthHandler />
+        <SessionGuard />
 
         {!shouldHideLeadPopup && <LeadPopup />}
         {!shouldHideNavbar    && <Navbar />}
