@@ -18,20 +18,21 @@ exports.verifyToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // ── Single-session enforcement ──────────────────────────────
-    // Skip DB check for admin tokens (admins can use multiple devices)
-    if (decoded.role !== 'admin' && decoded.session_id) {
-      const { data: user } = await supabase
-        .from('users')
+    if (decoded.session_id) {
+      // Admins check against admins table; users check against users table
+      const table = decoded.role === 'admin' ? 'admins' : 'users';
+
+      const { data: record } = await supabase
+        .from(table)
         .select('session_id')
         .eq('id', decoded.id)
         .maybeSingle();
 
-      if (user && user.session_id && user.session_id !== decoded.session_id) {
-        // A newer session exists — this device was logged out
+      if (record && record.session_id && record.session_id !== decoded.session_id) {
         return res.status(401).json({
-          success:  false,
-          message:  'SESSION_INVALIDATED',
-          code:     'SESSION_INVALIDATED'
+          success: false,
+          message: 'SESSION_INVALIDATED',
+          code:    'SESSION_INVALIDATED'
         });
       }
     }
@@ -52,16 +53,10 @@ exports.verifyToken = async (req, res, next) => {
 exports.isAdmin = (req, res, next) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Admin access required'
-      });
+      return res.status(403).json({ success: false, message: 'Admin access required' });
     }
     next();
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Authorization failed'
-    });
+    return res.status(500).json({ success: false, message: 'Authorization failed' });
   }
 };

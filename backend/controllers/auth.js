@@ -1,32 +1,33 @@
-const supabase = require('../config/supabase');
+const crypto    = require('crypto');
+const supabase  = require('../config/supabase');
 const { supabaseUrl, serviceRoleKey } = require('../config/supabase');
-const jwt = require('jsonwebtoken');
+const jwt       = require('jsonwebtoken');
 const validator = require('validator');
 
-// ── signInWithPassword via REST (works with service role key) ────
+// ── signInWithPassword via REST ──────────────────────────────────
 const signInWithPassword = async (email, password) => {
   const res = await fetch(
     `${supabaseUrl}/auth/v1/token?grant_type=password`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': serviceRoleKey
-      },
+      headers: { 'Content-Type': 'application/json', 'apikey': serviceRoleKey },
       body: JSON.stringify({ email, password })
     }
   );
   const data = await res.json();
-  if (!res.ok || data.error) {
-    return { data: null, error: data };
-  }
+  if (!res.ok || data.error) return { data: null, error: data };
   return { data: { user: data.user }, error: null };
 };
 
-
-const signAdminToken = (user) =>
+const signAdminToken = (admin, sessionId) =>
   jwt.sign(
-    { id: user.id, email: user.email, role: 'admin', full_name: user.full_name || '' },
+    {
+      id:         admin.id,
+      email:      admin.email,
+      role:       'admin',
+      full_name:  admin.full_name || '',
+      session_id: sessionId
+    },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES || '7d' }
   );
@@ -34,8 +35,7 @@ const signAdminToken = (user) =>
 
 // ================================================================
 // ADMIN LOGIN  —  POST /api/auth/login
-// Uses Supabase Auth for password verification, then checks that
-// the matching users row has role = 'admin'.
+// Reads from the separate `admins` table — never touches `users`.
 // ================================================================
 exports.login = async (req, res) => {
   try {
@@ -51,43 +51,44 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid email format' });
     }
 
-    // Authenticate via Supabase Auth REST (works without anon key)
+    // Authenticate via Supabase Auth
     const { data: authData, error: authError } = await signInWithPassword(email, password);
-
     if (authError || !authData?.user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // Check users table for admin role
-    const { data: user, error: userError } = await supabase
-      .from('users')
+    // Look up in admins table ONLY — not users table
+    const { data: admin, error: adminError } = await supabase
+      .from('admins')
       .select('id, email, full_name, role, is_active')
       .eq('id', authData.user.id)
       .maybeSingle();
 
-    if (userError || !user) {
-      return res.status(401).json({ success: false, message: 'Account not found' });
+    if (adminError || !admin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. This account does not have admin privileges.'
+      });
     }
 
-    if (user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Access denied. Admin accounts only.' });
+    if (admin.is_active === false) {
+      return res.status(403).json({ success: false, message: 'This admin account has been disabled' });
     }
 
-    if (user.is_active === false) {
-      return res.status(403).json({ success: false, message: 'This account has been disabled' });
-    }
+    // Generate new session_id and update last_login
+    const sessionId = crypto.randomBytes(32).toString('hex');
+    await supabase
+      .from('admins')
+      .update({ session_id: sessionId, last_login: new Date().toISOString() })
+      .eq('id', admin.id);
 
-    // Update last_login
-    supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id)
-      .then(() => {}).catch(() => {});
-
-    const token = signAdminToken(user);
+    const token = signAdminToken(admin, sessionId);
 
     return res.json({
       success: true,
       message: 'Login successful',
       token,
-      admin: { id: user.id, email: user.email, full_name: user.full_name, role: user.role }
+      admin: { id: admin.id, email: admin.email, full_name: admin.full_name, role: admin.role }
     });
 
   } catch (err) {
@@ -99,15 +100,13 @@ exports.login = async (req, res) => {
 
 // ================================================================
 // ADMIN SIGNUP  —  POST /api/auth/admin-signup
-// Creates a Supabase Auth user + users row with role = 'admin'.
-// Secured by a secret key in the request body so it can't be
-// called by random users.
+// Creates Supabase Auth user + row in `admins` table.
+// Does NOT touch the `users` table.
 // ================================================================
 exports.adminSignup = async (req, res) => {
   try {
     let { email, password, full_name, phone, secret_key } = req.body;
 
-    // Guard: secret key is mandatory
     if (!secret_key || secret_key !== process.env.ADMIN_SECRET_KEY) {
       return res.status(400).json({ success: false, message: 'Invalid admin secret key' });
     }
@@ -132,9 +131,9 @@ exports.adminSignup = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
     }
 
-    // Check phone uniqueness
+    // Check phone uniqueness in admins table
     const { data: existingPhone } = await supabase
-      .from('users')
+      .from('admins')
       .select('id')
       .eq('phone', phone)
       .maybeSingle();
@@ -159,31 +158,33 @@ exports.adminSignup = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Failed to create admin account' });
     }
 
-    // Check if users row already exists
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id, role')
+    // Insert into admins table — NOT users table
+    const { data: existingAdmin } = await supabase
+      .from('admins')
+      .select('id')
       .eq('id', authData.user.id)
       .maybeSingle();
 
-    if (existingUser) {
+    if (existingAdmin) {
       await supabase
-        .from('users')
-        .update({ role: 'admin', full_name, phone })
+        .from('admins')
+        .update({ full_name, phone, role: 'admin', is_active: true })
         .eq('id', authData.user.id);
     } else {
       const { error: insertError } = await supabase
-        .from('users')
+        .from('admins')
         .insert([{ id: authData.user.id, email, full_name, phone, role: 'admin' }]);
 
       if (insertError) {
         console.error('Admin insert error:', insertError.message);
-        return res.status(500).json({ success: false, message: 'Account created in Auth but failed to save profile' });
+        return res.status(500).json({ success: false, message: 'Account created but failed to save admin profile' });
       }
     }
 
-    // Sign token so frontend can log straight in after signup
-    const token = signAdminToken({ id: authData.user.id, email, full_name, role: 'admin' });
+    const sessionId = crypto.randomBytes(32).toString('hex');
+    await supabase.from('admins').update({ session_id: sessionId }).eq('id', authData.user.id);
+
+    const token = signAdminToken({ id: authData.user.id, email, full_name, role: 'admin' }, sessionId);
 
     return res.status(201).json({
       success: true,
@@ -203,7 +204,6 @@ exports.adminSignup = async (req, res) => {
 // VERIFY ADMIN TOKEN  —  GET /api/auth/verify
 // ================================================================
 exports.verifyAdmin = async (req, res) => {
-  // req.user is set by verifyToken middleware
   if (req.user.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'Admin access required' });
   }
