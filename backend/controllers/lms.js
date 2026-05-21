@@ -38,6 +38,7 @@ const getUserCourses = async (req, res) => {
       .from('users').select('id, email').eq('id', userId).maybeSingle();
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
+    // Get paid registrations
     const { data: paidRegs } = await supabase
       .from('registrations')
       .select('id, course_id, selected_course, payment_status, created_at')
@@ -50,6 +51,7 @@ const getUserCourses = async (req, res) => {
     const courseIds   = paidRegs.filter(r => r.course_id).map(r => r.course_id);
     const courseNames = paidRegs.filter(r => !r.course_id).map(r => r.selected_course);
 
+    // Fetch course details in one query
     let courses = [];
     if (courseIds.length > 0) {
       const { data: byId } = await supabase
@@ -65,44 +67,62 @@ const getUserCourses = async (req, res) => {
     const seen = new Set();
     const unique = courses.filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; });
 
-    // For each course get total lessons + completed lessons
-    const data = await Promise.all(unique.map(async (course) => {
-      const reg = paidRegs.find(r => r.course_id === course.id || r.selected_course === course.title);
+    if (unique.length === 0) return res.json({ success: true, data: [] });
 
-      const { count: totalLessons } = await supabase
-        .from('course_lessons')
-        .select('id', { count: 'exact', head: true })
-        .in('module_id',
-          (await supabase.from('course_modules').select('id').eq('course_id', course.id)).data?.map(m => m.id) || []
-        );
+    const allCourseIds = unique.map(c => c.id);
 
-      const { count: completedLessons } = await supabase
-        .from('lesson_progress')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('completed', true)
-        .in('lesson_id',
-          (await supabase.from('course_lessons').select('id')
-            .in('module_id',
-              (await supabase.from('course_modules').select('id').eq('course_id', course.id)).data?.map(m => m.id) || []
-            )
-          ).data?.map(l => l.id) || []
-        );
+    // Batch fetch all modules for all courses in ONE query
+    const { data: allModules } = await supabase
+      .from('course_modules').select('id, course_id').in('course_id', allCourseIds);
 
-      const total     = totalLessons     || 0;
-      const completed = completedLessons || 0;
+    const allModuleIds = (allModules || []).map(m => m.id);
+
+    // Batch fetch all lessons for all modules in ONE query
+    const { data: allLessons } = allModuleIds.length > 0
+      ? await supabase.from('course_lessons').select('id, module_id').in('module_id', allModuleIds)
+      : { data: [] };
+
+    const allLessonIds = (allLessons || []).map(l => l.id);
+
+    // Batch fetch all progress for this user in ONE query
+    const { data: allProgress } = allLessonIds.length > 0
+      ? await supabase.from('lesson_progress')
+          .select('lesson_id, completed')
+          .eq('user_id', userId)
+          .eq('completed', true)
+          .in('lesson_id', allLessonIds)
+      : { data: [] };
+
+    const completedSet = new Set((allProgress || []).map(p => p.lesson_id));
+
+    // Build module→course and lesson→module maps
+    const moduleToCourse = {};
+    (allModules || []).forEach(m => { moduleToCourse[m.id] = m.course_id; });
+
+    const lessonCountByCourse   = {};
+    const completedCountByCourse = {};
+    (allLessons || []).forEach(l => {
+      const cid = moduleToCourse[l.module_id];
+      if (!cid) return;
+      lessonCountByCourse[cid]    = (lessonCountByCourse[cid]    || 0) + 1;
+      completedCountByCourse[cid] = (completedCountByCourse[cid] || 0) + (completedSet.has(l.id) ? 1 : 0);
+    });
+
+    const data = unique.map(course => {
+      const reg       = paidRegs.find(r => r.course_id === course.id || r.selected_course === course.title);
+      const total     = lessonCountByCourse[course.id]    || 0;
+      const completed = completedCountByCourse[course.id] || 0;
       const progress  = total > 0 ? Math.round((completed / total) * 100) : 0;
-
       return {
-        course_id:        course.id,
-        payment_status:   'paid',
-        enrolled_at:      reg?.created_at || null,
+        course_id:         course.id,
+        payment_status:    'paid',
+        enrolled_at:       reg?.created_at || null,
         progress,
-        total_lessons:    total,
+        total_lessons:     total,
         completed_lessons: completed,
-        courses:          course
+        courses:           course
       };
-    }));
+    });
 
     return res.json({ success: true, data });
   } catch (err) {

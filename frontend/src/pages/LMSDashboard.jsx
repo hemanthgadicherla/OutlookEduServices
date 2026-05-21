@@ -177,14 +177,21 @@ const LMSDashboard = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [coursesRes, statsRes, notifRes] = await Promise.all([
-        lmsAPI.getCourses(user.id),
-        lmsAPI.getStats(),
-        lmsAPI.getNotifications()
-      ]);
-      if (coursesRes.success) setCourses(coursesRes.data || []);
-      if (statsRes.success)   setStats(statsRes.data);
-      if (notifRes.success)   setNotifCount((notifRes.data || []).filter(n => !n.is_read).length);
+      // Step 1: fetch courses first — fast check
+      const coursesRes = await lmsAPI.getCourses(user.id);
+      const fetchedCourses = coursesRes.success ? (coursesRes.data || []) : [];
+      setCourses(fetchedCourses);
+
+      // Step 2: only fetch stats + notifications if user has courses
+      // Avoids 2 extra slow queries for unpurchased users
+      if (fetchedCourses.length > 0) {
+        const [statsRes, notifRes] = await Promise.all([
+          lmsAPI.getStats(),
+          lmsAPI.getNotifications()
+        ]);
+        if (statsRes.success) setStats(statsRes.data);
+        if (notifRes.success) setNotifCount((notifRes.data || []).filter(n => !n.is_read).length);
+      }
     } catch (err) {
       console.error(err);
     } finally {
