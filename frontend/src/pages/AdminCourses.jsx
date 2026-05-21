@@ -2,16 +2,258 @@ import { useEffect, useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
 import { courseAPI, uploadAPI } from '../services/api';
 import { toast } from 'react-toastify';
+import { FaPlus, FaEdit, FaTrash, FaTimes, FaBookOpen } from 'react-icons/fa';
 
 const EMPTY = {
-  title: '', description: '', fullDescription: '',
-  price: '', image: '', imageFile: null, preview: ''
+  title: '', slug: '', description: '', full_description: '',
+  price: '', image: '', imageFile: null, preview: '',
+  category: '', is_published: true
 };
 
+const CATEGORIES = ['Marketing', 'Finance', 'Language', 'Technology', 'Business', 'Design', 'Other'];
+
+// Auto-generate slug from title
+const toSlug = (str) =>
+  str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+
+// ── Modal ────────────────────────────────────────────────────────
+const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
+  const [form, setForm] = useState(EMPTY);
+
+  useEffect(() => {
+    if (open) setForm(initial || EMPTY);
+  }, [open, initial]);
+
+  if (!open) return null;
+
+  const set = (field, val) => setForm(f => ({ ...f, [field]: val }));
+
+  const handleTitleChange = (e) => {
+    const t = e.target.value;
+    set('title', t);
+    if (!initial?.id) set('slug', toSlug(t)); // auto-fill slug only on create
+  };
+
+  const handleImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    set('imageFile', file);
+    set('preview', URL.createObjectURL(file));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(form);
+  };
+
+  const isEdit = !!initial?.id;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1040 }}
+      />
+
+      {/* Modal */}
+      <div
+        style={{
+          position: 'fixed', top: '50%', left: '50%',
+          transform: 'translate(-50%,-50%)',
+          width: '90%', maxWidth: 680,
+          maxHeight: '90vh', overflowY: 'auto',
+          background: '#fff', borderRadius: 16,
+          boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+          zIndex: 1050, padding: '28px 32px'
+        }}
+      >
+        {/* Header */}
+        <div className="d-flex align-items-center justify-content-between mb-4">
+          <div className="d-flex align-items-center gap-2">
+            <FaBookOpen style={{ color: '#0d6efd' }} />
+            <h5 className="fw-bold mb-0">{isEdit ? 'Edit Course' : 'Create New Course'}</h5>
+          </div>
+          <button onClick={onClose} className="btn btn-sm btn-light rounded-circle p-1">
+            <FaTimes />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+
+          {/* Section 1 — Course Details */}
+          <div className="p-3 rounded-3 mb-4" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
+            <div className="fw-semibold text-uppercase small text-muted mb-3" style={{ letterSpacing: 1 }}>
+              1. Course Details
+            </div>
+
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label fw-semibold small">Course Title *</label>
+                <input
+                  type="text" className="form-control" placeholder="e.g. Digital Marketing Mastery"
+                  value={form.title} onChange={handleTitleChange} required
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold small">URL Slug *</label>
+                <input
+                  type="text" className="form-control" placeholder="e.g. digital-marketing-mastery"
+                  value={form.slug} onChange={e => set('slug', e.target.value)} required
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label fw-semibold small">Short Description *</label>
+                <textarea
+                  className="form-control" rows="2"
+                  placeholder="Brief summary shown on course cards"
+                  value={form.description} onChange={e => set('description', e.target.value)} required
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label fw-semibold small">Full Description</label>
+                <textarea
+                  className="form-control" rows="4"
+                  placeholder="Detailed course content, what students will learn..."
+                  value={form.full_description} onChange={e => set('full_description', e.target.value)}
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold small">Price (₹) *</label>
+                <input
+                  type="number" className="form-control" placeholder="e.g. 25000"
+                  value={form.price} onChange={e => set('price', e.target.value)} required min="0"
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold small">Category *</label>
+                <select
+                  className="form-select"
+                  value={form.category} onChange={e => set('category', e.target.value)} required
+                >
+                  <option value="">Select category...</option>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="col-12">
+                <label className="form-label fw-semibold small">Thumbnail Image</label>
+                <input type="file" className="form-control" accept="image/*" onChange={handleImage} />
+                {form.preview && (
+                  <img
+                    src={form.preview} alt="Preview"
+                    className="mt-2 rounded" style={{ height: 120, objectFit: 'cover', borderRadius: 8 }}
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Publish toggle */}
+          <div className="d-flex align-items-center gap-2 mb-4">
+            <input
+              type="checkbox" className="form-check-input" id="pub_check"
+              checked={form.is_published}
+              onChange={e => set('is_published', e.target.checked)}
+              style={{ width: 20, height: 20, cursor: 'pointer' }}
+            />
+            <label htmlFor="pub_check" className="fw-semibold" style={{ cursor: 'pointer' }}>
+              Publish immediately
+            </label>
+            <span className="text-muted small ms-1">
+              {form.is_published ? '(Active — visible to students)' : '(Upcoming — shown as Coming Soon)'}
+            </span>
+          </div>
+
+          {/* Actions */}
+          <div className="d-flex justify-content-end gap-2">
+            <button type="button" className="btn btn-outline-secondary px-4" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary px-4" disabled={loading}>
+              {loading
+                ? <><span className="spinner-border spinner-border-sm me-2" />Saving...</>
+                : isEdit ? 'Update Course' : 'Save Course'
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </>
+  );
+};
+
+// ── Course Row ───────────────────────────────────────────────────
+const CourseRow = ({ course, onEdit, onDelete, onToggle }) => (
+  <div
+    className="d-flex align-items-center gap-3 p-3 rounded-3 mb-2"
+    style={{ background: '#fff', border: '1px solid #e9ecef' }}
+  >
+    {/* Thumbnail */}
+    <div style={{ width: 56, height: 56, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f1f3f5' }}>
+      {course.image
+        ? <img src={course.image} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={e => { e.target.style.display = 'none'; }} />
+        : <div className="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
+            <FaBookOpen />
+          </div>
+      }
+    </div>
+
+    {/* Info */}
+    <div className="flex-grow-1 min-w-0">
+      <div className="d-flex align-items-center gap-2 flex-wrap">
+        <span className="fw-semibold" style={{ fontSize: 15 }}>{course.title}</span>
+        {course.category && (
+          <span className="badge rounded-pill px-2" style={{ background: '#e7f3ff', color: '#0d6efd', fontSize: 11 }}>
+            {course.category}
+          </span>
+        )}
+        <span className={`badge rounded-pill px-2 ${course.is_published ? 'bg-success' : 'bg-warning text-dark'}`} style={{ fontSize: 11 }}>
+          {course.is_published ? '● Active' : '⏳ Upcoming'}
+        </span>
+      </div>
+      <div className="text-muted small mt-1">
+        ₹{Number(course.price).toLocaleString('en-IN')}
+        {course.enrolled_count > 0 && ` · ${course.enrolled_count} enrolled`}
+      </div>
+    </div>
+
+    {/* Actions */}
+    <div className="d-flex align-items-center gap-2 flex-shrink-0">
+      <div className="form-check form-switch mb-0 me-1">
+        <input
+          className="form-check-input" type="checkbox" role="switch"
+          checked={!!course.is_published} onChange={() => onToggle(course)}
+          style={{ cursor: 'pointer' }}
+          title={course.is_published ? 'Set as Upcoming' : 'Set as Active'}
+        />
+      </div>
+      <button
+        className="btn btn-sm btn-light rounded-circle"
+        style={{ width: 34, height: 34 }}
+        onClick={() => onEdit(course)}
+        title="Edit"
+      >
+        <FaEdit style={{ color: '#0d6efd' }} />
+      </button>
+      <button
+        className="btn btn-sm btn-light rounded-circle"
+        style={{ width: 34, height: 34 }}
+        onClick={() => onDelete(course.id)}
+        title="Delete"
+      >
+        <FaTrash style={{ color: '#dc3545' }} />
+      </button>
+    </div>
+  </div>
+);
+
+// ── Main Page ────────────────────────────────────────────────────
 const AdminCourses = () => {
   const [courses,   setCourses]   = useState([]);
-  const [form,      setForm]      = useState(EMPTY);
-  const [editingId, setEditingId] = useState(null);
+  const [modal,     setModal]     = useState(false);
+  const [editing,   setEditing]   = useState(null);
   const [loading,   setLoading]   = useState(false);
 
   useEffect(() => { fetchCourses(); }, []);
@@ -19,62 +261,43 @@ const AdminCourses = () => {
   const fetchCourses = async () => {
     try {
       const res = await courseAPI.getCourses();
-      if (res.success) setCourses(res.data);
+      if (res.success) setCourses(res.data || []);
     } catch (e) { console.error(e); }
   };
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const openCreate = () => { setEditing(null); setModal(true); };
+  const openEdit   = (c)  => { setEditing(c);   setModal(true); };
+  const closeModal = ()   => { setModal(false);  setEditing(null); };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setForm({ ...form, imageFile: file, preview: URL.createObjectURL(file) });
-  };
-
-  const resetForm = () => { setForm(EMPTY); setEditingId(null); };
-
-  const handleEdit = (c) => {
-    setEditingId(c.id);
-    setForm({
-      title:           c.title           || '',
-      description:     c.description     || '',
-      fullDescription: c.full_description || '',
-      price:           c.price           ?? '',
-      image:           c.image           || '',
-      imageFile:       null,
-      preview:         c.image           || ''
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSave = async (form) => {
     setLoading(true);
     try {
-      let imageUrl = form.image;
+      let imageUrl = form.image || form.preview || '';
 
       if (form.imageFile) {
         const up = await uploadAPI.uploadImage(form.imageFile);
-        if (up.success) { imageUrl = up.imageUrl; }
+        if (up.success) imageUrl = up.imageUrl;
         else { toast.error('Image upload failed'); return; }
       }
 
       const payload = {
         title:           form.title,
+        slug:            form.slug,
         description:     form.description,
-        fullDescription: form.fullDescription,
+        full_description: form.full_description,
         price:           form.price,
-        image:           imageUrl
+        image:           imageUrl,
+        category:        form.category,
+        is_published:    form.is_published
       };
 
-      const res = editingId
-        ? await courseAPI.updateCourse(editingId, payload)
+      const res = editing
+        ? await courseAPI.updateCourse(editing.id, payload)
         : await courseAPI.createCourse(payload);
 
       if (res.success) {
-        toast.success(editingId ? 'Course updated' : 'Course added');
-        resetForm();
+        toast.success(editing ? 'Course updated' : 'Course created');
+        closeModal();
         fetchCourses();
       } else {
         toast.error(res.message || 'Something went wrong');
@@ -88,206 +311,118 @@ const AdminCourses = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this course?')) return;
+    if (!window.confirm('Delete this course? This cannot be undone.')) return;
     try {
       const res = await courseAPI.deleteCourse(id);
       if (res.success) { toast.success('Course deleted'); fetchCourses(); }
+      else toast.error(res.message || 'Delete failed');
     } catch (e) { console.error(e); }
   };
 
-  // Toggle active ↔ upcoming
-  const handleToggleStatus = async (course) => {
+  const handleToggle = async (course) => {
     try {
       const res = await courseAPI.toggleStatus(course.id, !course.is_published);
-      if (res.success) {
-        toast.success(res.message);
-        fetchCourses();
-      } else {
-        toast.error(res.message || 'Failed to update status');
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error('Failed to update status');
-    }
+      if (res.success) { toast.success(res.message); fetchCourses(); }
+      else toast.error(res.message || 'Failed to update status');
+    } catch (e) { console.error(e); }
   };
 
-  const activeCourses   = courses.filter(c => c.is_published);
-  const upcomingCourses = courses.filter(c => !c.is_published);
+  const active   = courses.filter(c =>  c.is_published);
+  const upcoming = courses.filter(c => !c.is_published);
+
+  // Map course object to form shape for editing
+  const toForm = (c) => ({
+    title:            c.title            || '',
+    slug:             c.slug             || '',
+    description:      c.description      || '',
+    full_description: c.full_description || '',
+    price:            c.price            ?? '',
+    image:            c.image            || '',
+    imageFile:        null,
+    preview:          c.image            || '',
+    category:         c.category         || '',
+    is_published:     !!c.is_published,
+    id:               c.id
+  });
 
   return (
     <div className="d-flex">
       <AdminSidebar />
 
       <div className="flex-grow-1 p-4 bg-light" style={{ minHeight: '100vh' }}>
-        <h1 className="mb-4 fw-bold">Course Management</h1>
 
-        {/* ── FORM ── */}
-        <div className="card border-0 shadow-sm p-4 mb-5">
-          <h5 className="fw-bold mb-3">{editingId ? '✏️ Edit Course' : '➕ Add New Course'}</h5>
-          <form onSubmit={handleSubmit}>
-            <div className="row g-3">
-              <div className="col-md-6">
-                <input
-                  name="title" type="text" placeholder="Course Title"
-                  className="form-control" value={form.title}
-                  onChange={handleChange} required
-                />
-              </div>
-              <div className="col-md-6">
-                <input
-                  name="price" type="number" placeholder="Price (₹)"
-                  className="form-control" value={form.price}
-                  onChange={handleChange} required
-                />
-              </div>
-              <div className="col-12">
-                <textarea
-                  name="description" placeholder="Short Description"
-                  className="form-control" rows="2"
-                  value={form.description} onChange={handleChange} required
-                />
-              </div>
-              <div className="col-12">
-                <textarea
-                  name="fullDescription" placeholder="Full Course Details"
-                  className="form-control" rows="6"
-                  value={form.fullDescription} onChange={handleChange}
-                />
-              </div>
-              <div className="col-12">
-                <input
-                  type="file" className="form-control" accept="image/*"
-                  onChange={handleImageChange}
-                />
-              </div>
-              {form.preview && (
-                <div className="col-12">
-                  <img
-                    src={form.preview} alt="Preview"
-                    className="rounded"
-                    style={{ width: 220, height: 150, objectFit: 'cover' }}
-                  />
+        {/* Header */}
+        <div className="d-flex align-items-center justify-content-between mb-4">
+          <h1 className="fw-bold mb-0">Courses</h1>
+          <button className="btn btn-primary d-flex align-items-center gap-2" onClick={openCreate}>
+            <FaPlus size={13} /> Create Course
+          </button>
+        </div>
+
+        {/* Course list */}
+        {courses.length === 0 ? (
+          <div className="text-center py-5 rounded-3" style={{ background: '#fff', border: '1px dashed #dee2e6' }}>
+            <FaBookOpen size={40} className="text-muted mb-3" />
+            <p className="fw-semibold text-muted mb-1">No courses yet</p>
+            <p className="text-muted small mb-3">Create your first course to get started</p>
+            <button className="btn btn-primary btn-sm" onClick={openCreate}>
+              <FaPlus className="me-1" /> Create Course
+            </button>
+          </div>
+        ) : (
+          <div className="card border-0 shadow-sm p-3">
+
+            {/* Active */}
+            {active.length > 0 && (
+              <div className="mb-4">
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <span className="fw-semibold text-muted small text-uppercase" style={{ letterSpacing: 1 }}>
+                    Active
+                  </span>
+                  <span className="badge bg-success rounded-pill">{active.length}</span>
                 </div>
-              )}
-            </div>
-
-            <div className="d-flex gap-2 mt-3">
-              <button className="btn btn-primary" disabled={loading}>
-                {loading ? 'Processing…' : editingId ? 'Update Course' : 'Add Course'}
-              </button>
-              {editingId && (
-                <button type="button" className="btn btn-outline-secondary" onClick={resetForm}>
-                  Cancel
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-
-        {/* ── ACTIVE COURSES ── */}
-        <div className="mb-5">
-          <h4 className="fw-bold mb-3 d-flex align-items-center gap-2">
-            <span className="badge bg-success">Active</span>
-            Courses
-            <span className="badge bg-secondary ms-1">{activeCourses.length}</span>
-          </h4>
-
-          {activeCourses.length === 0 && (
-            <p className="text-muted">No active courses yet.</p>
-          )}
-
-          <div className="row g-3">
-            {activeCourses.map(course => (
-              <div key={course.id} className="col-md-4">
-                <CourseCard
-                  course={course}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onToggle={handleToggleStatus}
-                />
+                {active.map(c => (
+                  <CourseRow key={c.id} course={c}
+                    onEdit={() => openEdit(toForm(c))}
+                    onDelete={handleDelete}
+                    onToggle={handleToggle}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            )}
 
-        {/* ── UPCOMING COURSES ── */}
-        <div>
-          <h4 className="fw-bold mb-3 d-flex align-items-center gap-2">
-            <span className="badge bg-warning text-dark">Upcoming</span>
-            Courses
-            <span className="badge bg-secondary ms-1">{upcomingCourses.length}</span>
-          </h4>
-
-          {upcomingCourses.length === 0 && (
-            <p className="text-muted">No upcoming courses.</p>
-          )}
-
-          <div className="row g-3">
-            {upcomingCourses.map(course => (
-              <div key={course.id} className="col-md-4">
-                <CourseCard
-                  course={course}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onToggle={handleToggleStatus}
-                />
+            {/* Upcoming */}
+            {upcoming.length > 0 && (
+              <div>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <span className="fw-semibold text-muted small text-uppercase" style={{ letterSpacing: 1 }}>
+                    Upcoming
+                  </span>
+                  <span className="badge bg-warning text-dark rounded-pill">{upcoming.length}</span>
+                </div>
+                {upcoming.map(c => (
+                  <CourseRow key={c.id} course={c}
+                    onEdit={() => openEdit(toForm(c))}
+                    onDelete={handleDelete}
+                    onToggle={handleToggle}
+                  />
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        </div>
-
+        )}
       </div>
+
+      {/* Modal */}
+      <CourseModal
+        open={modal}
+        onClose={closeModal}
+        onSave={handleSave}
+        initial={editing}
+        loading={loading}
+      />
     </div>
   );
 };
-
-
-// ── Course Card sub-component ──────────────────────────────────────
-const CourseCard = ({ course, onEdit, onDelete, onToggle }) => (
-  <div className="card h-100 shadow-sm border-0">
-    {course.image && (
-      <img
-        src={course.image} alt={course.title}
-        className="card-img-top"
-        onError={(e) => { e.target.style.display = 'none'; }}
-        style={{ height: 180, objectFit: 'cover' }}
-      />
-    )}
-    <div className="card-body d-flex flex-column">
-      <div className="d-flex justify-content-between align-items-start mb-2">
-        <h6 className="fw-bold mb-0">{course.title}</h6>
-        <span className={`badge ${course.is_published ? 'bg-success' : 'bg-warning text-dark'}`}>
-          {course.is_published ? 'Active' : 'Upcoming'}
-        </span>
-      </div>
-      <p className="text-muted small mb-1">{course.description}</p>
-      <p className="fw-semibold mb-3">₹{Number(course.price).toLocaleString()}</p>
-
-      {/* Status toggle */}
-      <div className="form-check form-switch mb-3">
-        <input
-          className="form-check-input"
-          type="checkbox"
-          role="switch"
-          id={`status-${course.id}`}
-          checked={!!course.is_published}
-          onChange={() => onToggle(course)}
-        />
-        <label className="form-check-label small" htmlFor={`status-${course.id}`}>
-          {course.is_published ? 'Active (visible)' : 'Upcoming (coming soon)'}
-        </label>
-      </div>
-
-      <div className="d-flex gap-2 mt-auto">
-        <button className="btn btn-warning btn-sm flex-grow-1" onClick={() => onEdit(course)}>
-          Edit
-        </button>
-        <button className="btn btn-danger btn-sm flex-grow-1" onClick={() => onDelete(course.id)}>
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-);
 
 export default AdminCourses;
