@@ -112,14 +112,23 @@ const LMSSidebar = ({ notifCount = 0 }) => {
 
   return (
     <>
-      {/* Desktop sidebar */}
+      {/* Fixed sidebar placeholder — holds 240px space in the flex layout */}
+      <div className="d-none d-lg-block" style={{ width: 240, flexShrink: 0 }} />
+
+      {/* Desktop sidebar — fixed */}
       <div
         className="d-none d-lg-flex flex-column"
         style={{
-          width: 240, minHeight: '100vh', flexShrink: 0,
+          width: 240,
+          height: '100vh',
+          position: 'fixed',
+          top: 0,
+          left: 0,
           background: '#0f172a',
           borderRight: '1px solid rgba(255,255,255,0.06)',
-          position: 'sticky', top: 0, height: '100vh', overflowY: 'auto'
+          overflowY: 'auto',
+          zIndex: 100,
+          flexShrink: 0
         }}
       >
         <SidebarContent />
