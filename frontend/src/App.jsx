@@ -127,9 +127,9 @@ function App() {
             {/* ── Admin public ── */}
             <Route path="/admin/login"               element={<AdminLogin />} />
             <Route path="/admin/signup"              element={<AdminSignup />} />
-            <Route path="/admin/dashboard"           element={<AdminDashboard />} />
 
-            {/* ── Admin protected ── */}
+            {/* ── Admin protected — ALL admin pages require admin role ── */}
+            <Route path="/admin/dashboard"     element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
             <Route path="/admin/courses"       element={<AdminProtectedRoute><AdminCourses /></AdminProtectedRoute>} />
             <Route path="/admin/blogs"         element={<AdminProtectedRoute><AdminBlogs /></AdminProtectedRoute>} />
             <Route path="/admin/leads"         element={<AdminProtectedRoute><AdminLeads /></AdminProtectedRoute>} />
