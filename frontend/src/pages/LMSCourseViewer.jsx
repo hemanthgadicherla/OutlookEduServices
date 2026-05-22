@@ -1,38 +1,17 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaCheckCircle, FaCircle, FaChevronDown, FaChevronRight,
-  FaArrowLeft, FaPlay, FaFilePdf, FaLock, FaTrophy
+  FaArrowLeft, FaPlay, FaLock, FaTrophy, FaBookOpen
 } from 'react-icons/fa';
 import { lmsAPI } from '../services/api';
 import { getUser } from '../utils/auth';
 import { toast } from 'react-toastify';
 
-// ── Smart video player — handles YouTube, Bunny Stream, direct URL ──
+// ── Smart video player — YouTube, Bunny Stream, or direct URL ──
 const VideoPlayer = ({ url, source, title }) => {
   if (!url) return null;
-
-  // Resolve embed URL based on source
-  const getEmbedUrl = () => {
-    const s = source || detectSource(url);
-    if (s === 'youtube') {
-      // Handle all YouTube URL formats
-      const match = url.match(
-        /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-      );
-      const id = match?.[1];
-      return id
-        ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&autoplay=0`
-        : url;
-    }
-    if (s === 'bunny') {
-      // Bunny Stream iframe URLs are used directly
-      return url;
-    }
-    // Direct URL — use native video element
-    return null;
-  };
 
   const detectSource = (u) => {
     if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
@@ -40,17 +19,25 @@ const VideoPlayer = ({ url, source, title }) => {
     return 'url';
   };
 
-  const embedUrl = getEmbedUrl();
   const resolvedSource = source || detectSource(url);
+
+  const getEmbedUrl = () => {
+    if (resolvedSource === 'youtube') {
+      const match = url.match(
+        /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+      );
+      const id = match?.[1];
+      return id ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1` : url;
+    }
+    if (resolvedSource === 'bunny') return url;
+    return null;
+  };
+
+  const embedUrl = getEmbedUrl();
 
   if (resolvedSource === 'url' || !embedUrl) {
     return (
-      <video
-        src={url}
-        controls
-        style={{ width: '100%', height: '100%', background: '#000' }}
-        title={title}
-      >
+      <video src={url} controls style={{ width: '100%', height: '100%', background: '#000' }} title={title}>
         Your browser does not support the video tag.
       </video>
     );
@@ -68,21 +55,102 @@ const VideoPlayer = ({ url, source, title }) => {
   );
 };
 
+// ── "Up Next" countdown overlay shown after a lesson ends ──
+const UpNextOverlay = ({ nextLesson, onGoNext, onDismiss }) => {
+  const [count, setCount] = useState(8);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setCount(c => {
+        if (c <= 1) { clearInterval(intervalRef.current); onGoNext(); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(intervalRef.current);
+  }, [onGoNext]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="d-flex flex-column align-items-center justify-content-center"
+      style={{
+        position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.88)',
+        zIndex: 10, padding: 24, textAlign: 'center'
+      }}
+    >
+      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 8 }}>Up Next</div>
+      <div className="fw-semibold text-white mb-4" style={{ fontSize: 16, maxWidth: 320 }}>{nextLesson.title}</div>
+      <button
+        onClick={onGoNext}
+        className="btn rounded-3 mb-2 px-4"
+        style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontWeight: 600 }}
+      >
+        Play Now ({count}s)
+      </button>
+      <button onClick={onDismiss} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer' }}>
+        Cancel
+      </button>
+    </motion.div>
+  );
+};
+
+// ── Other paid courses strip ──
+const SuggestionsStrip = ({ courses }) => {
+  if (!courses || courses.length === 0) return null;
+  return (
+    <div className="px-3 px-lg-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="fw-semibold mb-3" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
+        MORE FROM YOUR COURSES
+      </div>
+      <div className="d-flex gap-3" style={{ overflowX: 'auto', paddingBottom: 4 }}>
+        {courses.map(c => (
+          <Link
+            key={c.id}
+            to={`/lms/course/${c.id}`}
+            className="d-flex gap-3 align-items-center text-decoration-none rounded-3 p-2 flex-shrink-0"
+            style={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.06)', minWidth: 260, maxWidth: 300 }}
+          >
+            {c.image
+              ? <img src={c.image} alt={c.title} style={{ width: 60, height: 44, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
+              : <div className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
+                  style={{ width: 60, height: 44, background: 'rgba(99,102,241,0.15)' }}>
+                  <FaBookOpen style={{ color: '#6366f1' }} size={18} />
+                </div>
+            }
+            <div style={{ overflow: 'hidden' }}>
+              <div className="fw-semibold text-white" style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {c.title}
+              </div>
+              {c.category && (
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{c.category}</div>
+              )}
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const LMSCourseViewer = () => {
   const { id }   = useParams();
   const navigate = useNavigate();
   const user     = getUser();
 
-  const [data,           setData]           = useState(null);
-  const [loading,        setLoading]        = useState(true);
-  const [activeLesson,   setActiveLesson]   = useState(null);
-  const [expandedMods,   setExpandedMods]   = useState({});
-  const [sidebarOpen,    setSidebarOpen]    = useState(true);
-  const [certGenerated,  setCertGenerated]  = useState(false);
+  const [data,          setData]          = useState(null);
+  const [loading,       setLoading]       = useState(true);
+  const [activeLesson,  setActiveLesson]  = useState(null);
+  const [expandedMods,  setExpandedMods]  = useState({});
+  const [sidebarOpen,   setSidebarOpen]   = useState(true);
+  const [certGenerated, setCertGenerated] = useState(false);
+  const [showUpNext,    setShowUpNext]    = useState(false);
+  const [suggestions,   setSuggestions]   = useState([]);
 
   useEffect(() => {
     if (!user) { navigate('/login', { replace: true }); return; }
     fetchContent();
+    fetchSuggestions();
   }, [id]);
 
   const fetchContent = async () => {
@@ -91,22 +159,32 @@ const LMSCourseViewer = () => {
       const res = await lmsAPI.getCourseContent(id);
       if (!res.success) { toast.error(res.message || 'Access denied'); navigate('/lms'); return; }
       setData(res.data);
-      // Auto-expand first module, auto-select first incomplete lesson
       if (res.data.modules?.length > 0) {
         const firstMod = res.data.modules[0];
         setExpandedMods({ [firstMod.id]: true });
-        const firstIncomplete = res.data.modules
-          .flatMap(m => m.lessons || [])
-          .find(l => !l.completed);
-        const firstLesson = firstIncomplete || res.data.modules[0]?.lessons?.[0];
-        if (firstLesson) setActiveLesson(firstLesson);
+        const firstIncomplete = res.data.modules.flatMap(m => m.lessons || []).find(l => !l.completed);
+        setActiveLesson(firstIncomplete || res.data.modules[0]?.lessons?.[0] || null);
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to load course');
       navigate('/lms');
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchSuggestions = async () => {
+    try {
+      const res = await lmsAPI.getCourseSuggestions(id);
+      if (res.success) setSuggestions(res.data?.other_courses || []);
+    } catch { /* non-critical */ }
+  };
+
+  const allLessons = data?.modules?.flatMap(m => m.lessons || []) || [];
+
+  const getNext = (lesson) => {
+    const idx = allLessons.findIndex(l => l.id === lesson?.id);
+    return idx >= 0 && idx < allLessons.length - 1 ? allLessons[idx + 1] : null;
   };
 
   const markComplete = useCallback(async (lesson) => {
@@ -123,36 +201,34 @@ const LMSCourseViewer = () => {
       setActiveLesson(prev => prev?.id === lesson.id ? { ...prev, completed: true } : prev);
       toast.success('Lesson marked as complete!');
 
-      // Check if all lessons done → generate certificate
-      const allLessons = data?.modules?.flatMap(m => m.lessons || []) || [];
+      // Check 100% → certificate
       const nowCompleted = allLessons.filter(l => l.completed || l.id === lesson.id).length;
       if (nowCompleted === allLessons.length && allLessons.length > 0) {
         const certRes = await lmsAPI.generateCertificate(parseInt(id));
-        if (certRes.success) {
-          setCertGenerated(true);
-          toast.success('🎉 Course completed! Certificate generated!');
-        }
+        if (certRes.success) { setCertGenerated(true); toast.success('Course completed! Certificate generated!'); }
       }
+
+      // Show "Up Next" if there's a next lesson
+      if (getNext(lesson)) setShowUpNext(true);
     } catch {
       toast.error('Failed to update progress');
     }
-  }, [data, id]);
+  }, [allLessons, id]);
 
-  const goNext = () => {
-    const all = data?.modules?.flatMap(m => m.lessons || []) || [];
-    const idx = all.findIndex(l => l.id === activeLesson?.id);
-    if (idx < all.length - 1) setActiveLesson(all[idx + 1]);
-  };
+  const goNext = useCallback(() => {
+    const next = getNext(activeLesson);
+    if (next) { setActiveLesson(next); setShowUpNext(false); }
+  }, [activeLesson, allLessons]);
 
   const goPrev = () => {
-    const all = data?.modules?.flatMap(m => m.lessons || []) || [];
-    const idx = all.findIndex(l => l.id === activeLesson?.id);
-    if (idx > 0) setActiveLesson(all[idx - 1]);
+    const idx = allLessons.findIndex(l => l.id === activeLesson?.id);
+    if (idx > 0) setActiveLesson(allLessons[idx - 1]);
   };
 
-  const totalLessons     = data?.modules?.flatMap(m => m.lessons || []).length || 0;
-  const completedLessons = data?.modules?.flatMap(m => m.lessons || []).filter(l => l.completed).length || 0;
+  const totalLessons     = allLessons.length;
+  const completedLessons = allLessons.filter(l => l.completed).length;
   const progress         = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const nextLesson       = getNext(activeLesson);
 
   if (loading) return (
     <div className="d-flex align-items-center justify-content-center min-vh-100" style={{ background: '#0f172a' }}>
@@ -181,9 +257,9 @@ const LMSCourseViewer = () => {
         <div className="d-flex align-items-center gap-3">
           <div className="d-none d-sm-flex align-items-center gap-2">
             <div style={{ width: 120, height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 99 }}>
-              <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: 99 }} />
+              <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: 99, transition: 'width 0.4s ease' }} />
             </div>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{progress}%</span>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{completedLessons}/{totalLessons}</span>
           </div>
           <button onClick={() => setSidebarOpen(s => !s)}
             className="btn btn-sm rounded-3"
@@ -212,25 +288,27 @@ const LMSCourseViewer = () => {
       {/* Main content */}
       <div className="d-flex flex-grow-1" style={{ minHeight: 0 }}>
 
-        {/* Video / content area */}
-        <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0 }}>
+        {/* Video + lesson info area */}
+        <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0, overflowY: 'auto' }}>
           {activeLesson ? (
             <>
-              {/* Video player */}
-              <div style={{ background: '#000', aspectRatio: '16/9', maxHeight: '60vh', position: 'relative' }}>
-                {activeLesson.video_url ? (
-                  <VideoPlayer url={activeLesson.video_url} source={activeLesson.video_source} title={activeLesson.title} />
-                ) : (
-                  <div className="d-flex flex-column align-items-center justify-content-center h-100 text-white">
-                    <FaPlay size={48} style={{ color: 'rgba(255,255,255,0.2)', marginBottom: 16 }} />
-                    <p style={{ color: 'rgba(255,255,255,0.4)' }}>No video for this lesson</p>
-                  </div>
-                )}
+              {/* Video player with Up Next overlay */}
+              <div style={{ background: '#000', aspectRatio: '16/9', maxHeight: '60vh', position: 'relative', flexShrink: 0 }}>
+                <VideoPlayer url={activeLesson.video_url} source={activeLesson.video_source} title={activeLesson.title} />
+                <AnimatePresence>
+                  {showUpNext && nextLesson && (
+                    <UpNextOverlay
+                      nextLesson={nextLesson}
+                      onGoNext={goNext}
+                      onDismiss={() => setShowUpNext(false)}
+                    />
+                  )}
+                </AnimatePresence>
               </div>
 
-              {/* Lesson info */}
-              <div className="p-3 p-lg-4 flex-grow-1" style={{ overflowY: 'auto' }}>
-                <div className="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-3">
+              {/* Lesson meta */}
+              <div className="p-3 p-lg-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="d-flex align-items-start justify-content-between flex-wrap gap-3">
                   <div>
                     <h5 className="fw-bold text-white mb-1">{activeLesson.title}</h5>
                     <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
@@ -253,23 +331,30 @@ const LMSCourseViewer = () => {
                 </div>
 
                 {activeLesson.content && (
-                  <div className="rounded-3 p-3 mb-3" style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 1.8 }}>
+                  <div className="rounded-3 p-3 mt-3"
+                    style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 1.8 }}>
                     {activeLesson.content}
                   </div>
                 )}
 
-                {/* Nav buttons */}
+                {/* Prev / Next */}
                 <div className="d-flex gap-2 mt-3">
-                  <button onClick={goPrev} className="btn btn-sm rounded-3"
+                  <button onClick={goPrev} disabled={allLessons.findIndex(l => l.id === activeLesson.id) === 0}
+                    className="btn btn-sm rounded-3"
                     style={{ background: '#1e293b', color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
                     ← Previous
                   </button>
-                  <button onClick={goNext} className="btn btn-sm rounded-3"
-                    style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: 13 }}>
-                    Next →
-                  </button>
+                  {nextLesson && (
+                    <button onClick={goNext} className="btn btn-sm rounded-3"
+                      style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: 13 }}>
+                      Next →
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {/* Other enrolled courses */}
+              <SuggestionsStrip courses={suggestions} />
             </>
           ) : (
             <div className="d-flex align-items-center justify-content-center flex-grow-1 text-white">
@@ -286,7 +371,7 @@ const LMSCourseViewer = () => {
             className="d-none d-lg-flex flex-column"
             style={{ width: 300, flexShrink: 0, background: '#1e293b', borderLeft: '1px solid rgba(255,255,255,0.06)', overflowY: 'auto' }}
           >
-            <div className="p-3 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.06) !important' }}>
+            <div className="p-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="fw-semibold text-white mb-1" style={{ fontSize: 14 }}>Course Content</div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
                 {completedLessons}/{totalLessons} lessons · {progress}% complete
@@ -303,48 +388,38 @@ const LMSCourseViewer = () => {
                   {expandedMods[mod.id] ? <FaChevronDown size={11} /> : <FaChevronRight size={11} />}
                 </button>
 
-                {expandedMods[mod.id] && (mod.lessons || []).map(lesson => {
-                  const isLocked = !lesson.is_free && !lesson.completed && activeLesson?.id !== lesson.id;
-                  return (
-                    <button
-                      key={lesson.id}
-                      onClick={() => {
-                        if (!lesson.is_free && lesson.video_url) {
-                          // Paid users can access all lessons — is_free just marks free preview
-                          setActiveLesson(lesson);
-                        } else {
-                          setActiveLesson(lesson);
-                        }
-                      }}
-                      className="d-flex align-items-center gap-2 w-100 px-3 py-2 border-0 text-start"
-                      style={{
-                        background: activeLesson?.id === lesson.id ? 'rgba(99,102,241,0.15)' : 'transparent',
-                        borderLeft: activeLesson?.id === lesson.id ? '3px solid #6366f1' : '3px solid transparent',
-                        color: activeLesson?.id === lesson.id ? '#fff' : 'rgba(255,255,255,0.55)',
-                        fontSize: 13, cursor: 'pointer'
-                      }}>
-                      {lesson.completed
-                        ? <FaCheckCircle size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
-                        : lesson.is_free
-                          ? <FaCircle size={13} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-                          : <FaLock size={11} style={{ color: '#f59e0b', flexShrink: 0 }} />
-                      }
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                        {lesson.title}
+                {expandedMods[mod.id] && (mod.lessons || []).map(lesson => (
+                  <button
+                    key={lesson.id}
+                    onClick={() => { setActiveLesson(lesson); setShowUpNext(false); }}
+                    className="d-flex align-items-center gap-2 w-100 px-3 py-2 border-0 text-start"
+                    style={{
+                      background: activeLesson?.id === lesson.id ? 'rgba(99,102,241,0.15)' : 'transparent',
+                      borderLeft: activeLesson?.id === lesson.id ? '3px solid #6366f1' : '3px solid transparent',
+                      color: activeLesson?.id === lesson.id ? '#fff' : 'rgba(255,255,255,0.55)',
+                      fontSize: 13, cursor: 'pointer'
+                    }}>
+                    {lesson.completed
+                      ? <FaCheckCircle size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
+                      : lesson.is_free
+                        ? <FaCircle size={13} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                        : <FaLock size={11} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                    }
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {lesson.title}
+                    </span>
+                    {lesson.is_free && (
+                      <span style={{ fontSize: 9, color: '#22c55e', flexShrink: 0, border: '1px solid #22c55e', borderRadius: 4, padding: '1px 4px' }}>
+                        FREE
                       </span>
-                      {lesson.is_free && (
-                        <span style={{ fontSize: 9, color: '#22c55e', flexShrink: 0, border: '1px solid #22c55e', borderRadius: 4, padding: '1px 4px' }}>
-                          FREE
-                        </span>
-                      )}
-                      {lesson.duration && (
-                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
-                          {lesson.duration}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                    )}
+                    {lesson.duration && (
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+                        {lesson.duration}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             ))}
           </motion.div>
