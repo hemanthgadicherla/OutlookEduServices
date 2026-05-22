@@ -359,6 +359,58 @@ const markNotificationRead = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────
+// GET /api/lms/resume  — last-touched lesson across all courses
+// Returns the most recently updated lesson_progress row so the
+// dashboard can show a "Continue Learning" card.
+// ─────────────────────────────────────────────────────────────
+const getResume = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { data: latest } = await supabase
+      .from('lesson_progress')
+      .select('lesson_id, completed, watched_seconds, updated_at')
+      .eq('user_id', userId)
+      .eq('completed', false)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!latest) return res.json({ success: true, data: null });
+
+    const { data: lesson } = await supabase
+      .from('course_lessons')
+      .select('id, title, module_id')
+      .eq('id', latest.lesson_id)
+      .maybeSingle();
+
+    if (!lesson) return res.json({ success: true, data: null });
+
+    const { data: mod } = await supabase
+      .from('course_modules')
+      .select('id, course_id')
+      .eq('id', lesson.module_id)
+      .maybeSingle();
+
+    if (!mod) return res.json({ success: true, data: null });
+
+    const { data: course } = await supabase
+      .from('courses')
+      .select('id, title, image, category')
+      .eq('id', mod.course_id)
+      .maybeSingle();
+
+    return res.json({
+      success: true,
+      data: course ? { course, lesson_id: lesson.id, lesson_title: lesson.title, watched_seconds: latest.watched_seconds } : null
+    });
+  } catch (err) {
+    console.error('getResume error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch resume' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
 // GET /api/lms/course/:id/suggestions
 // Returns other paid courses so the viewer can show "Up Next"
 // ─────────────────────────────────────────────────────────────
@@ -416,5 +468,6 @@ module.exports = {
   generateCertificate,
   getNotifications,
   markNotificationRead,
-  getCourseSuggestions
+  getCourseSuggestions,
+  getResume
 };

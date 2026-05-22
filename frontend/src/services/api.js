@@ -672,6 +672,13 @@ export const lmsAPI = {
     });
     return await response.json();
   },
+  getResume: async () => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/resume`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
   getCourseSuggestions: async (courseId) => {
     const token = localStorage.getItem('userToken');
     const response = await fetch(`${API_BASE_URL}/lms/course/${courseId}/suggestions`, {

@@ -10,11 +10,13 @@ const {
   generateCertificate,
   getNotifications,
   markNotificationRead,
-  getCourseSuggestions
+  getCourseSuggestions,
+  getResume
 } = require('../controllers/lms');
 
 router.use(verifyToken); // all LMS routes require auth
 
+router.get('/resume',                   getResume);
 router.get('/courses',                  getUserCourses);
 router.get('/course/:id',               getCourseContent);
 router.post('/progress',                updateProgress);
