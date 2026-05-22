@@ -725,24 +725,26 @@ const AdminCourseEditor = () => {
   };
 
   if (loading) return (
-    <div className="d-flex">
+    <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
       <AdminSidebar />
-      <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
+      <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ background: '#f8f9fa' }}>
         <div className="spinner-border text-primary" />
       </div>
     </div>
   );
 
   return (
-    <div className="d-flex">
+    <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
       <AdminSidebar />
-      <div className="flex-grow-1" style={{ minHeight: '100vh', background: '#f8f9fa' }}>
 
-        {/* Sticky header */}
-        <div className="d-flex align-items-center justify-content-between px-4 py-3"
+      {/* Right panel — header locked, content scrolls */}
+      <div className="d-flex flex-column flex-grow-1" style={{ height: '100vh', overflow: 'hidden' }}>
+
+        {/* Header — never moves */}
+        <div className="d-flex align-items-center justify-content-between px-4"
           style={{
+            height: 60, flexShrink: 0,
             background: '#fff', borderBottom: '1px solid #e9ecef',
-            position: 'sticky', top: 0, zIndex: 100,
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
           }}>
           <div className="d-flex align-items-center gap-3">
@@ -752,10 +754,10 @@ const AdminCourseEditor = () => {
               <FaArrowLeft size={13} /> Back
             </button>
             <div>
-              <h5 className="fw-bold mb-0" style={{ fontSize: 17 }}>{form.title || 'Untitled Course'}</h5>
-              <div className="text-muted" style={{ fontSize: 11 }}>
-                /admin/courses/{id}
-              </div>
+              <h5 className="fw-bold mb-0 text-truncate" style={{ fontSize: 17, maxWidth: 340 }}>
+                {form.title || 'Untitled Course'}
+              </h5>
+              <div className="text-muted" style={{ fontSize: 11 }}>/admin/courses/{id}</div>
             </div>
           </div>
           <button className="btn btn-primary px-4 d-flex align-items-center gap-2"
@@ -766,6 +768,8 @@ const AdminCourseEditor = () => {
           </button>
         </div>
 
+        {/* Scrollable content */}
+        <div style={{ flex: 1, overflowY: 'auto', background: '#f8f9fa' }}>
         <div className="p-4" style={{ maxWidth: 900, margin: '0 auto' }}>
 
           {/* Section 1 — Course Details */}
@@ -831,6 +835,7 @@ const AdminCourseEditor = () => {
                 <input type="file" className="form-control" accept="image/*" onChange={handleImage} />
                 {form.preview && (
                   <img src={form.preview} alt="Preview" className="mt-2 rounded"
+                    loading="lazy"
                     style={{ height: 100, objectFit: 'cover', borderRadius: 8 }}
                     onError={e => { e.target.style.display = 'none'; }} />
                 )}
@@ -873,6 +878,7 @@ const AdminCourseEditor = () => {
             )}
           </div>
 
+        </div>
         </div>
       </div>
     </div>
