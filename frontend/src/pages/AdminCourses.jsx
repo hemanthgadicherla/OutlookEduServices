@@ -1,11 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
 import { courseAPI, uploadAPI, curriculumAPI } from '../services/api';
 import { toast } from 'react-toastify';
 import {
   FaPlus, FaEdit, FaTrash, FaTimes, FaBookOpen,
   FaChevronDown, FaChevronRight,
-  FaLock, FaLockOpen, FaCheck, FaGripVertical
+  FaLock, FaLockOpen, FaCheck, FaGripVertical,
+  FaUpload, FaVideo, FaTimesCircle
 } from 'react-icons/fa';
 
 const EMPTY_COURSE = {
@@ -21,17 +22,22 @@ const toSlug = (str) =>
 
 // ── Inline lesson row — add / edit in one line ───────────────────
 const LessonRow = ({ lesson, moduleId, onRefresh, isNew, onCancelNew }) => {
-  const [title,  setTitle]  = useState(lesson?.title     || '');
-  const [url,    setUrl]    = useState(lesson?.video_url || '');
-  const [locked, setLocked] = useState(lesson ? !lesson.is_free : true);
-  const [saving, setSaving] = useState(false);
+  const [title,      setTitle]      = useState(lesson?.title     || '');
+  const [url,        setUrl]        = useState(lesson?.video_url?.startsWith('storage:') ? '' : (lesson?.video_url || ''));
+  const [locked,     setLocked]     = useState(lesson ? !lesson.is_free : true);
+  const [saving,     setSaving]     = useState(false);
+  const [uploading,  setUploading]  = useState(false);
+  const [uploadPct,  setUploadPct]  = useState(0);
+  const fileRef = useRef(null);
+
+  const hasStorageVideo = lesson?.video_url?.startsWith('storage:');
 
   const save = async () => {
     if (!title.trim()) { toast.error('Lesson title is required'); return; }
     setSaving(true);
     const payload = {
       title:     title.trim(),
-      video_url: url.trim() || null,
+      video_url: hasStorageVideo ? lesson.video_url : (url.trim() || null),
       is_free:   !locked,
       content:   lesson?.content || null,
     };
@@ -63,54 +69,131 @@ const LessonRow = ({ lesson, moduleId, onRefresh, isNew, onCancelNew }) => {
     }
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !lesson?.id) return;
+
+    setUploading(true);
+    setUploadPct(0);
+
+    try {
+      // 1. Get signed upload URL from backend
+      const res = await curriculumAPI.getVideoUploadUrl(lesson.id, file.name);
+      if (!res.success) { toast.error(res.message || 'Failed to get upload URL'); setUploading(false); return; }
+
+      // 2. Upload directly to Supabase Storage via XHR for progress tracking
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', res.data.signedUrl);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setUploadPct(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload  = () => xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`));
+        xhr.onerror = () => reject(new Error('Upload network error'));
+        xhr.send(file);
+      });
+
+      toast.success('Video uploaded successfully!');
+      onRefresh();
+    } catch (err) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+      setUploadPct(0);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const removeVideo = async () => {
+    if (!lesson?.id || !window.confirm('Remove this video?')) return;
+    const res = await curriculumAPI.deleteVideo(lesson.id);
+    if (res.success) { toast.success('Video removed'); onRefresh(); }
+    else toast.error(res.message);
+  };
+
   return (
-    <div className="d-flex align-items-center gap-2 py-2 px-2 rounded-2 mb-1"
-      style={{ background: isNew ? '#f0f7ff' : '#f8fafc', border: `1px solid ${isNew ? '#bfdbfe' : '#e9ecef'}` }}>
+    <div className="mb-1">
+      <div className="d-flex align-items-center gap-2 py-2 px-2 rounded-2"
+        style={{ background: isNew ? '#f0f7ff' : '#f8fafc', border: `1px solid ${isNew ? '#bfdbfe' : '#e9ecef'}` }}>
 
-      {/* Drag handle */}
-      {!isNew && <FaGripVertical className="text-muted flex-shrink-0" style={{ cursor: 'grab', fontSize: 11 }} />}
+        {/* Drag handle */}
+        {!isNew && <FaGripVertical className="text-muted flex-shrink-0" style={{ cursor: 'grab', fontSize: 11 }} />}
 
-      {/* Lesson title */}
-      <input
-        type="text" className="form-control form-control-sm"
-        style={{ minWidth: 120, maxWidth: 200 }}
-        placeholder="Lesson name"
-        value={title} onChange={e => setTitle(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && save()}
-      />
+        {/* Lesson title */}
+        <input
+          type="text" className="form-control form-control-sm"
+          style={{ minWidth: 120, maxWidth: 200 }}
+          placeholder="Lesson name"
+          value={title} onChange={e => setTitle(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && save()}
+        />
 
-      {/* URL input — source auto-detected from URL (YouTube/Bunny/direct) */}
-      <input
-        type="text" className="form-control form-control-sm flex-grow-1"
-        placeholder="Video URL (YouTube, Bunny Stream, or direct)"
-        value={url} onChange={e => setUrl(e.target.value)}
-      />
+        {/* Video: hosted indicator OR URL input */}
+        {hasStorageVideo ? (
+          <div className="d-flex align-items-center gap-1 flex-grow-1 px-2 rounded-2"
+            style={{ background: '#d1fae5', border: '1px solid #6ee7b7', fontSize: 12 }}>
+            <FaVideo size={11} style={{ color: '#059669' }} />
+            <span style={{ color: '#065f46' }} className="flex-grow-1">Hosted video</span>
+            <button type="button" onClick={removeVideo}
+              style={{ background: 'none', border: 'none', color: '#dc2626', padding: 0, cursor: 'pointer' }}>
+              <FaTimesCircle size={13} />
+            </button>
+          </div>
+        ) : (
+          <input
+            type="text" className="form-control form-control-sm flex-grow-1"
+            placeholder="YouTube / Bunny URL  — or upload below"
+            value={url} onChange={e => setUrl(e.target.value)}
+          />
+        )}
 
-      {/* Lock / Unlock */}
-      <button type="button"
-        className={`btn btn-sm flex-shrink-0 d-flex align-items-center gap-1 ${locked ? 'btn-danger' : 'btn-success'}`}
-        style={{ fontSize: 12, whiteSpace: 'nowrap' }}
-        onClick={toggleLock}
-        title={locked ? 'Locked — click to unlock (free preview)' : 'Unlocked — click to lock'}>
-        {locked ? <><FaLock size={11} /> Locked</> : <><FaLockOpen size={11} /> Free</>}
-      </button>
+        {/* Upload file (only for saved lessons) */}
+        {lesson?.id && !hasStorageVideo && (
+          <>
+            <input type="file" ref={fileRef} accept="video/*" style={{ display: 'none' }}
+              onChange={handleFileUpload} />
+            <button type="button"
+              className="btn btn-sm btn-outline-secondary flex-shrink-0 d-flex align-items-center gap-1"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              style={{ fontSize: 12, whiteSpace: 'nowrap' }}
+              title="Upload video to Supabase (private, 2-hr signed URLs)">
+              <FaUpload size={11} /> {uploading ? `${uploadPct}%` : 'Upload'}
+            </button>
+          </>
+        )}
 
-      {/* Save */}
-      <button type="button"
-        className="btn btn-primary btn-sm flex-shrink-0 d-flex align-items-center gap-1"
-        onClick={save} disabled={saving} style={{ fontSize: 12 }}>
-        {saving
-          ? <span className="spinner-border spinner-border-sm" />
-          : <><FaCheck size={11} /> Save</>}
-      </button>
+        {/* Lock / Unlock */}
+        <button type="button"
+          className={`btn btn-sm flex-shrink-0 d-flex align-items-center gap-1 ${locked ? 'btn-danger' : 'btn-success'}`}
+          style={{ fontSize: 12, whiteSpace: 'nowrap' }}
+          onClick={toggleLock}>
+          {locked ? <><FaLock size={11} /> Locked</> : <><FaLockOpen size={11} /> Free</>}
+        </button>
 
-      {/* Delete / Cancel */}
-      {isNew
-        ? <button type="button" className="btn btn-sm btn-outline-secondary flex-shrink-0"
-            onClick={onCancelNew}><FaTimes size={11} /></button>
-        : <button type="button" className="btn btn-sm btn-outline-danger flex-shrink-0"
-            onClick={del}><FaTrash size={11} /></button>
-      }
+        {/* Save */}
+        <button type="button"
+          className="btn btn-primary btn-sm flex-shrink-0 d-flex align-items-center gap-1"
+          onClick={save} disabled={saving} style={{ fontSize: 12 }}>
+          {saving ? <span className="spinner-border spinner-border-sm" /> : <><FaCheck size={11} /> Save</>}
+        </button>
+
+        {/* Delete / Cancel */}
+        {isNew
+          ? <button type="button" className="btn btn-sm btn-outline-secondary flex-shrink-0"
+              onClick={onCancelNew}><FaTimes size={11} /></button>
+          : <button type="button" className="btn btn-sm btn-outline-danger flex-shrink-0"
+              onClick={del}><FaTrash size={11} /></button>
+        }
+      </div>
+
+      {/* Upload progress bar */}
+      {uploading && (
+        <div style={{ height: 4, background: '#e5e7eb', borderRadius: 99, marginTop: 3 }}>
+          <div style={{ height: '100%', width: `${uploadPct}%`, background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: 99, transition: 'width 0.2s' }} />
+        </div>
+      )}
     </div>
   );
 };

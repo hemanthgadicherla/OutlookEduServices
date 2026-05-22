@@ -146,6 +146,7 @@ const LMSCourseViewer = () => {
   const [certGenerated, setCertGenerated] = useState(false);
   const [showUpNext,    setShowUpNext]    = useState(false);
   const [suggestions,   setSuggestions]   = useState([]);
+  const [signedUrl,     setSignedUrl]     = useState(null);
 
   useEffect(() => {
     if (!user) { navigate('/login', { replace: true }); return; }
@@ -181,6 +182,15 @@ const LMSCourseViewer = () => {
   };
 
   const allLessons = data?.modules?.flatMap(m => m.lessons || []) || [];
+
+  // Fetch signed URL whenever the active lesson changes to a hosted video
+  useEffect(() => {
+    setSignedUrl(null);
+    if (!activeLesson?.video_url?.startsWith('storage:')) return;
+    lmsAPI.getLessonVideoUrl(activeLesson.id)
+      .then(r => { if (r.success) setSignedUrl(r.data.url); })
+      .catch(() => {});
+  }, [activeLesson?.id]);
 
   const getNext = (lesson) => {
     const idx = allLessons.findIndex(l => l.id === lesson?.id);
@@ -294,8 +304,19 @@ const LMSCourseViewer = () => {
             <>
               {/* Video player with Up Next overlay */}
               <div style={{ background: '#000', aspectRatio: '16/9', maxHeight: '60vh', position: 'relative', flexShrink: 0 }}>
-                <VideoPlayer url={activeLesson.video_url} source={activeLesson.video_source} title={activeLesson.title} />
+                {activeLesson.video_url?.startsWith('storage:') && !signedUrl ? (
+                  <div className="d-flex align-items-center justify-content-center h-100">
+                    <div className="spinner-border" style={{ color: '#6366f1' }} />
+                  </div>
+                ) : (
+                  <VideoPlayer
+                    url={activeLesson.video_url?.startsWith('storage:') ? signedUrl : activeLesson.video_url}
+                    source={activeLesson.video_url?.startsWith('storage:') ? 'url' : undefined}
+                    title={activeLesson.title}
+                  />
+                )}
                 <AnimatePresence>
+
                   {showUpNext && nextLesson && (
                     <UpNextOverlay
                       nextLesson={nextLesson}
