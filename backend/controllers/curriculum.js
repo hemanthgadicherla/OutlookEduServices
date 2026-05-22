@@ -13,7 +13,7 @@ const getModules = async (req, res) => {
       .from('course_modules')
       .select(`
         id, title, position, course_id,
-        course_lessons ( id, title, video_url, video_source, content, position, is_free, duration )
+        course_lessons ( id, title, video_url, content, position, is_free )
       `)
       .eq('course_id', courseId)
       .order('position', { ascending: true });
@@ -115,16 +115,10 @@ const deleteModule = async (req, res) => {
 const createLesson = async (req, res) => {
   try {
     const { moduleId } = req.params;
-    const { title, video_url, video_source, content, is_free, duration, position } = req.body;
+    const { title, video_url, content, is_free, position } = req.body;
 
     if (!title?.trim()) {
       return res.status(400).json({ success: false, message: 'Lesson title is required' });
-    }
-
-    // Validate video_source
-    const validSources = ['youtube', 'bunny', 'url', null, undefined, ''];
-    if (video_source && !validSources.includes(video_source)) {
-      return res.status(400).json({ success: false, message: 'Invalid video source' });
     }
 
     let pos = position;
@@ -139,14 +133,12 @@ const createLesson = async (req, res) => {
     const { data, error } = await supabase
       .from('course_lessons')
       .insert([{
-        module_id:    parseInt(moduleId),
-        title:        title.trim(),
-        video_url:    video_url    || null,
-        video_source: video_source || null,
-        content:      content      || null,
-        is_free:      is_free      ?? false,
-        duration:     duration     || null,
-        position:     pos
+        module_id: parseInt(moduleId),
+        title:     title.trim(),
+        video_url: video_url || null,
+        content:   content   || null,
+        is_free:   is_free   ?? false,
+        position:  pos
       }])
       .select()
       .single();
@@ -163,16 +155,14 @@ const createLesson = async (req, res) => {
 const updateLesson = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, video_url, video_source, content, is_free, duration, position } = req.body;
+    const { title, video_url, content, is_free, position } = req.body;
 
     const updates = {};
-    if (title        !== undefined) updates.title        = title.trim();
-    if (video_url    !== undefined) updates.video_url    = video_url    || null;
-    if (video_source !== undefined) updates.video_source = video_source || null;
-    if (content      !== undefined) updates.content      = content      || null;
-    if (is_free      !== undefined) updates.is_free      = is_free;
-    if (duration     !== undefined) updates.duration     = duration     || null;
-    if (position     !== undefined) updates.position     = position;
+    if (title     !== undefined) updates.title     = title.trim();
+    if (video_url !== undefined) updates.video_url = video_url || null;
+    if (content   !== undefined) updates.content   = content   || null;
+    if (is_free   !== undefined) updates.is_free   = is_free;
+    if (position  !== undefined) updates.position  = position;
 
     const { data, error } = await supabase
       .from('course_lessons')
