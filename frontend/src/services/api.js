@@ -711,8 +711,68 @@ export const adminAuthAPI = {
 
 };
 
-// PAYMENT API
-// Uses userToken (not adminToken) — payment routes require user auth
+// CURRICULUM API (Admin — chapters & lessons)
+export const curriculumAPI = {
+  getModules: async (courseId) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/course/${courseId}/modules`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return r.json();
+  },
+  createModule: async (courseId, data) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/course/${courseId}/modules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify(data)
+    });
+    return r.json();
+  },
+  updateModule: async (id, data) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/modules/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify(data)
+    });
+    return r.json();
+  },
+  deleteModule: async (id) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/modules/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return r.json();
+  },
+  createLesson: async (moduleId, data) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/modules/${moduleId}/lessons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify(data)
+    });
+    return r.json();
+  },
+  updateLesson: async (id, data) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify(data)
+    });
+    return r.json();
+  },
+  deleteLesson: async (id) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return r.json();
+  }
+};
 export const paymentAPI = {
   // CREATE RAZORPAY ORDER
   // Amount is determined server-side from DB — only registrationId needed

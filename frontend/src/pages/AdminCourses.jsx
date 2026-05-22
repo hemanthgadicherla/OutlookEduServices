@@ -1,37 +1,260 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
-import { courseAPI, uploadAPI } from '../services/api';
+import { courseAPI, uploadAPI, curriculumAPI } from '../services/api';
 import { toast } from 'react-toastify';
-import { FaPlus, FaEdit, FaTrash, FaTimes, FaBookOpen } from 'react-icons/fa';
+import {
+  FaPlus, FaEdit, FaTrash, FaTimes, FaBookOpen,
+  FaChevronDown, FaChevronRight, FaYoutube, FaVideo,
+  FaLink, FaGripVertical, FaCheck
+} from 'react-icons/fa';
 
-const EMPTY = {
+const EMPTY_COURSE = {
   title: '', slug: '', description: '', full_description: '',
   price: '', image: '', imageFile: null, preview: '',
   category: '', is_published: true
 };
 
+const EMPTY_LESSON = {
+  title: '', video_url: '', video_source: 'youtube',
+  content: '', is_free: false, duration: ''
+};
+
 const CATEGORIES = ['Marketing', 'Finance', 'Language', 'Technology', 'Business', 'Design', 'Other'];
 
-// Auto-generate slug from title
 const toSlug = (str) =>
   str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
 
-// ── Modal ────────────────────────────────────────────────────────
+// ── Video source badge ───────────────────────────────────────────
+const SourceBadge = ({ source }) => {
+  if (source === 'youtube') return (
+    <span className="badge rounded-pill d-flex align-items-center gap-1"
+      style={{ background: '#fee2e2', color: '#dc2626', fontSize: 10 }}>
+      <FaYoutube size={10} /> YouTube
+    </span>
+  );
+  if (source === 'bunny') return (
+    <span className="badge rounded-pill d-flex align-items-center gap-1"
+      style={{ background: '#fef3c7', color: '#d97706', fontSize: 10 }}>
+      <FaVideo size={10} /> Bunny Stream
+    </span>
+  );
+  return (
+    <span className="badge rounded-pill d-flex align-items-center gap-1"
+      style={{ background: '#e0e7ff', color: '#4338ca', fontSize: 10 }}>
+      <FaLink size={10} /> URL
+    </span>
+  );
+};
+
+// ── Lesson Form (inline inside chapter) ─────────────────────────
+const LessonForm = ({ onSave, onCancel, initial }) => {
+  const [f, setF] = useState(initial || EMPTY_LESSON);
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+
+  const videoHelp = {
+    youtube: 'Paste full YouTube URL: https://www.youtube.com/watch?v=...',
+    bunny:   'Paste Bunny Stream embed URL: https://iframe.mediadelivery.net/embed/...',
+    url:     'Paste any direct video URL (.mp4, .m3u8, etc.)'
+  };
+
+  return (
+    <div className="p-3 rounded-3 mt-2" style={{ background: '#f0f4ff', border: '1px solid #c7d2fe' }}>
+      <div className="row g-2 mb-2">
+        <div className="col-md-6">
+          <input type="text" className="form-control form-control-sm"
+            placeholder="Lesson title *" value={f.title}
+            onChange={e => set('title', e.target.value)} />
+        </div>
+        <div className="col-md-3">
+          <input type="text" className="form-control form-control-sm"
+            placeholder="Duration (e.g. 12:30)" value={f.duration}
+            onChange={e => set('duration', e.target.value)} />
+        </div>
+        <div className="col-md-3">
+          <div className="form-check mt-1">
+            <input type="checkbox" className="form-check-input" id={`free_${initial?.id || 'new'}`}
+              checked={f.is_free} onChange={e => set('is_free', e.target.checked)} />
+            <label className="form-check-label small" htmlFor={`free_${initial?.id || 'new'}`}>
+              Free preview
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Video source selector */}
+      <div className="row g-2 mb-2">
+        <div className="col-md-3">
+          <select className="form-select form-select-sm" value={f.video_source}
+            onChange={e => set('video_source', e.target.value)}>
+            <option value="youtube">YouTube</option>
+            <option value="bunny">Bunny Stream</option>
+            <option value="url">Direct URL</option>
+          </select>
+        </div>
+        <div className="col-md-9">
+          <input type="text" className="form-control form-control-sm"
+            placeholder={videoHelp[f.video_source]}
+            value={f.video_url} onChange={e => set('video_url', e.target.value)} />
+        </div>
+      </div>
+
+      <textarea className="form-control form-control-sm mb-2" rows="2"
+        placeholder="Lesson notes / text content (optional)"
+        value={f.content} onChange={e => set('content', e.target.value)} />
+
+      <div className="d-flex gap-2">
+        <button type="button" className="btn btn-primary btn-sm d-flex align-items-center gap-1"
+          onClick={() => { if (!f.title.trim()) { toast.error('Lesson title required'); return; } onSave(f); }}>
+          <FaCheck size={11} /> Save Lesson
+        </button>
+        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── Chapter (Module) block ───────────────────────────────────────
+const ChapterBlock = ({ module, courseId, onRefresh }) => {
+  const [expanded,     setExpanded]     = useState(true);
+  const [addingLesson, setAddingLesson] = useState(false);
+  const [editLesson,   setEditLesson]   = useState(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleVal,     setTitleVal]     = useState(module.title);
+
+  const saveTitle = async () => {
+    if (!titleVal.trim()) return;
+    await curriculumAPI.updateModule(module.id, { title: titleVal.trim() });
+    setEditingTitle(false);
+    onRefresh();
+  };
+
+  const deleteChapter = async () => {
+    if (!window.confirm(`Delete chapter "${module.title}" and all its lessons?`)) return;
+    const res = await curriculumAPI.deleteModule(module.id);
+    if (res.success) { toast.success('Chapter deleted'); onRefresh(); }
+    else toast.error(res.message);
+  };
+
+  const saveLesson = async (f) => {
+    const payload = {
+      title: f.title, video_url: f.video_url, video_source: f.video_source,
+      content: f.content, is_free: f.is_free, duration: f.duration
+    };
+    const res = editLesson
+      ? await curriculumAPI.updateLesson(editLesson.id, payload)
+      : await curriculumAPI.createLesson(module.id, payload);
+    if (res.success) {
+      toast.success(editLesson ? 'Lesson updated' : 'Lesson added');
+      setAddingLesson(false); setEditLesson(null); onRefresh();
+    } else toast.error(res.message);
+  };
+
+  const deleteLesson = async (id) => {
+    if (!window.confirm('Delete this lesson?')) return;
+    const res = await curriculumAPI.deleteLesson(id);
+    if (res.success) { toast.success('Lesson deleted'); onRefresh(); }
+    else toast.error(res.message);
+  };
+
+  return (
+    <div className="rounded-3 mb-3" style={{ border: '1px solid #e2e8f0', background: '#fff' }}>
+      {/* Chapter header */}
+      <div className="d-flex align-items-center gap-2 p-3" style={{ borderBottom: expanded ? '1px solid #f1f5f9' : 'none' }}>
+        <FaGripVertical className="text-muted" style={{ cursor: 'grab', flexShrink: 0 }} />
+        <button type="button" className="btn btn-sm btn-light p-1" onClick={() => setExpanded(e => !e)}>
+          {expanded ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />}
+        </button>
+        {editingTitle ? (
+          <input autoFocus className="form-control form-control-sm flex-grow-1"
+            value={titleVal} onChange={e => setTitleVal(e.target.value)}
+            onBlur={saveTitle} onKeyDown={e => e.key === 'Enter' && saveTitle()} />
+        ) : (
+          <span className="fw-semibold flex-grow-1" style={{ fontSize: 14 }}>{module.title}</span>
+        )}
+        <span className="text-muted small">{(module.course_lessons || []).length} lessons</span>
+        <button type="button" className="btn btn-sm btn-light p-1" onClick={() => setEditingTitle(e => !e)} title="Rename">
+          <FaEdit size={12} style={{ color: '#0d6efd' }} />
+        </button>
+        <button type="button" className="btn btn-sm btn-light p-1" onClick={deleteChapter} title="Delete chapter">
+          <FaTrash size={12} style={{ color: '#dc3545' }} />
+        </button>
+      </div>
+
+      {/* Lessons */}
+      {expanded && (
+        <div className="p-3">
+          {(module.course_lessons || []).map(lesson => (
+            <div key={lesson.id}>
+              {editLesson?.id === lesson.id ? (
+                <LessonForm initial={editLesson} onSave={saveLesson} onCancel={() => setEditLesson(null)} />
+              ) : (
+                <div className="d-flex align-items-center gap-2 py-2 px-2 rounded-2 mb-1"
+                  style={{ background: '#f8fafc', border: '1px solid #e9ecef' }}>
+                  <FaGripVertical className="text-muted" style={{ cursor: 'grab', fontSize: 11 }} />
+                  <span className="flex-grow-1 small fw-semibold">{lesson.title}</span>
+                  {lesson.video_source && <SourceBadge source={lesson.video_source} />}
+                  {lesson.duration && <span className="text-muted" style={{ fontSize: 11 }}>{lesson.duration}</span>}
+                  {lesson.is_free && <span className="badge bg-success rounded-pill" style={{ fontSize: 10 }}>Free</span>}
+                  <button type="button" className="btn btn-sm btn-light p-1"
+                    onClick={() => setEditLesson(lesson)}>
+                    <FaEdit size={11} style={{ color: '#0d6efd' }} />
+                  </button>
+                  <button type="button" className="btn btn-sm btn-light p-1"
+                    onClick={() => deleteLesson(lesson.id)}>
+                    <FaTrash size={11} style={{ color: '#dc3545' }} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {addingLesson && !editLesson && (
+            <LessonForm onSave={saveLesson} onCancel={() => setAddingLesson(false)} />
+          )}
+
+          {!addingLesson && !editLesson && (
+            <button type="button" className="btn btn-sm btn-outline-primary mt-1 d-flex align-items-center gap-1"
+              onClick={() => setAddingLesson(true)}>
+              <FaPlus size={10} /> Add Lesson
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Course Modal ─────────────────────────────────────────────────
 const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
-  const [form, setForm] = useState(EMPTY);
+  const [form,    setForm]    = useState(EMPTY_COURSE);
+  const [modules, setModules] = useState([]);
+  const [newChap, setNewChap] = useState('');
+  const [addingChap, setAddingChap] = useState(false);
+
+  const fetchModules = useCallback(async (id) => {
+    if (!id) return;
+    const res = await curriculumAPI.getModules(id);
+    if (res.success) setModules(res.data || []);
+  }, []);
 
   useEffect(() => {
-    if (open) setForm(initial || EMPTY);
-  }, [open, initial]);
+    if (open) {
+      setForm(initial || EMPTY_COURSE);
+      setModules([]);
+      if (initial?.id) fetchModules(initial.id);
+    }
+  }, [open, initial, fetchModules]);
 
   if (!open) return null;
 
-  const set = (field, val) => setForm(f => ({ ...f, [field]: val }));
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleTitleChange = (e) => {
     const t = e.target.value;
     set('title', t);
-    if (!initial?.id) set('slug', toSlug(t)); // auto-fill slug only on create
+    if (!initial?.id) set('slug', toSlug(t));
   };
 
   const handleImage = (e) => {
@@ -41,96 +264,79 @@ const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
     set('preview', URL.createObjectURL(file));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(form);
+  const addChapter = async () => {
+    if (!newChap.trim()) return;
+    if (!initial?.id) { toast.info('Save the course first, then add chapters'); return; }
+    const res = await curriculumAPI.createModule(initial.id, { title: newChap.trim() });
+    if (res.success) {
+      toast.success('Chapter added');
+      setNewChap(''); setAddingChap(false);
+      fetchModules(initial.id);
+    } else toast.error(res.message);
   };
 
   const isEdit = !!initial?.id;
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1040 }}
-      />
-
-      {/* Modal */}
-      <div
-        style={{
-          position: 'fixed', top: '50%', left: '50%',
-          transform: 'translate(-50%,-50%)',
-          width: '90%', maxWidth: 680,
-          maxHeight: '90vh', overflowY: 'auto',
-          background: '#fff', borderRadius: 16,
-          boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
-          zIndex: 1050, padding: '28px 32px'
-        }}
-      >
+      <div onClick={onClose}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1040 }} />
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%',
+        transform: 'translate(-50%,-50%)',
+        width: '95%', maxWidth: 760,
+        maxHeight: '92vh', overflowY: 'auto',
+        background: '#fff', borderRadius: 16,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
+        zIndex: 1050, padding: '28px 32px'
+      }}>
         {/* Header */}
         <div className="d-flex align-items-center justify-content-between mb-4">
           <div className="d-flex align-items-center gap-2">
             <FaBookOpen style={{ color: '#0d6efd' }} />
             <h5 className="fw-bold mb-0">{isEdit ? 'Edit Course' : 'Create New Course'}</h5>
           </div>
-          <button onClick={onClose} className="btn btn-sm btn-light rounded-circle p-1">
-            <FaTimes />
-          </button>
+          <button onClick={onClose} className="btn btn-sm btn-light rounded-circle p-1"><FaTimes /></button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-
+        <form onSubmit={e => { e.preventDefault(); onSave(form); }}>
           {/* Section 1 — Course Details */}
           <div className="p-3 rounded-3 mb-4" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
             <div className="fw-semibold text-uppercase small text-muted mb-3" style={{ letterSpacing: 1 }}>
               1. Course Details
             </div>
-
             <div className="row g-3">
               <div className="col-md-6">
                 <label className="form-label fw-semibold small">Course Title *</label>
-                <input
-                  type="text" className="form-control" placeholder="e.g. Digital Marketing Mastery"
-                  value={form.title} onChange={handleTitleChange} required
-                />
+                <input type="text" className="form-control" placeholder="e.g. Digital Marketing Mastery"
+                  value={form.title} onChange={handleTitleChange} required />
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold small">URL Slug *</label>
-                <input
-                  type="text" className="form-control" placeholder="e.g. digital-marketing-mastery"
-                  value={form.slug} onChange={e => set('slug', e.target.value)} required
-                />
+                <input type="text" className="form-control" placeholder="e.g. digital-marketing-mastery"
+                  value={form.slug} onChange={e => set('slug', e.target.value)} required />
               </div>
               <div className="col-12">
                 <label className="form-label fw-semibold small">Short Description *</label>
-                <textarea
-                  className="form-control" rows="2"
+                <textarea className="form-control" rows="2"
                   placeholder="Brief summary shown on course cards"
-                  value={form.description} onChange={e => set('description', e.target.value)} required
-                />
+                  value={form.description} onChange={e => set('description', e.target.value)} required />
               </div>
               <div className="col-12">
                 <label className="form-label fw-semibold small">Full Description</label>
-                <textarea
-                  className="form-control" rows="4"
-                  placeholder="Detailed course content, what students will learn..."
-                  value={form.full_description} onChange={e => set('full_description', e.target.value)}
-                />
+                <textarea className="form-control" rows="3"
+                  placeholder="Detailed course content..."
+                  value={form.full_description} onChange={e => set('full_description', e.target.value)} />
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold small">Price (₹) *</label>
-                <input
-                  type="number" className="form-control" placeholder="e.g. 25000"
-                  value={form.price} onChange={e => set('price', e.target.value)} required min="0"
-                />
+                <input type="number" className="form-control" placeholder="e.g. 25000"
+                  value={form.price} onChange={e => set('price', e.target.value)} required min="0" />
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold small">Category *</label>
-                <select
-                  className="form-select"
-                  value={form.category} onChange={e => set('category', e.target.value)} required
-                >
+                <select className="form-select" value={form.category}
+                  onChange={e => set('category', e.target.value)} required>
                   <option value="">Select category...</option>
                   {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -139,24 +345,63 @@ const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
                 <label className="form-label fw-semibold small">Thumbnail Image</label>
                 <input type="file" className="form-control" accept="image/*" onChange={handleImage} />
                 {form.preview && (
-                  <img
-                    src={form.preview} alt="Preview"
-                    className="mt-2 rounded" style={{ height: 120, objectFit: 'cover', borderRadius: 8 }}
-                    onError={e => { e.target.style.display = 'none'; }}
-                  />
+                  <img src={form.preview} alt="Preview" className="mt-2 rounded"
+                    style={{ height: 100, objectFit: 'cover', borderRadius: 8 }}
+                    onError={e => { e.target.style.display = 'none'; }} />
                 )}
               </div>
             </div>
           </div>
 
+          {/* Section 2 — Curriculum */}
+          <div className="p-3 rounded-3 mb-4" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <div className="fw-semibold text-uppercase small text-muted" style={{ letterSpacing: 1 }}>
+                2. Curriculum (Chapters &amp; Lessons)
+              </div>
+              {isEdit && (
+                <button type="button" className="btn btn-sm btn-dark d-flex align-items-center gap-1"
+                  onClick={() => setAddingChap(true)}>
+                  <FaPlus size={11} /> Add Chapter
+                </button>
+              )}
+            </div>
+
+            {!isEdit && (
+              <div className="text-center py-3 rounded-3" style={{ border: '1px dashed #cbd5e1', color: '#94a3b8', fontSize: 14 }}>
+                Save the course first to add chapters and lessons.
+              </div>
+            )}
+
+            {isEdit && modules.length === 0 && !addingChap && (
+              <div className="text-center py-3 rounded-3" style={{ border: '1px dashed #cbd5e1', color: '#94a3b8', fontSize: 14 }}>
+                No chapters added. Build your curriculum here!
+              </div>
+            )}
+
+            {isEdit && modules.map(mod => (
+              <ChapterBlock key={mod.id} module={mod} courseId={initial.id}
+                onRefresh={() => fetchModules(initial.id)} />
+            ))}
+
+            {addingChap && (
+              <div className="d-flex gap-2 mt-2">
+                <input autoFocus type="text" className="form-control form-control-sm"
+                  placeholder="Chapter title..." value={newChap}
+                  onChange={e => setNewChap(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChapter())} />
+                <button type="button" className="btn btn-primary btn-sm" onClick={addChapter}>Add</button>
+                <button type="button" className="btn btn-outline-secondary btn-sm"
+                  onClick={() => { setAddingChap(false); setNewChap(''); }}>Cancel</button>
+              </div>
+            )}
+          </div>
+
           {/* Publish toggle */}
           <div className="d-flex align-items-center gap-2 mb-4">
-            <input
-              type="checkbox" className="form-check-input" id="pub_check"
-              checked={form.is_published}
-              onChange={e => set('is_published', e.target.checked)}
-              style={{ width: 20, height: 20, cursor: 'pointer' }}
-            />
+            <input type="checkbox" className="form-check-input" id="pub_check"
+              checked={form.is_published} onChange={e => set('is_published', e.target.checked)}
+              style={{ width: 20, height: 20, cursor: 'pointer' }} />
             <label htmlFor="pub_check" className="fw-semibold" style={{ cursor: 'pointer' }}>
               Publish immediately
             </label>
@@ -165,16 +410,11 @@ const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
             </span>
           </div>
 
-          {/* Actions */}
           <div className="d-flex justify-content-end gap-2">
-            <button type="button" className="btn btn-outline-secondary px-4" onClick={onClose}>
-              Cancel
-            </button>
+            <button type="button" className="btn btn-outline-secondary px-4" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary px-4" disabled={loading}>
-              {loading
-                ? <><span className="spinner-border spinner-border-sm me-2" />Saving...</>
-                : isEdit ? 'Update Course' : 'Save Course'
-              }
+              {loading ? <><span className="spinner-border spinner-border-sm me-2" />Saving...</>
+                : isEdit ? 'Update Course' : 'Save Course'}
             </button>
           </div>
         </form>
@@ -185,31 +425,29 @@ const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
 
 // ── Course Row ───────────────────────────────────────────────────
 const CourseRow = ({ course, onEdit, onDelete, onToggle }) => (
-  <div
-    className="d-flex align-items-center gap-3 p-3 rounded-3 mb-2"
-    style={{ background: '#fff', border: '1px solid #e9ecef' }}
-  >
-    {/* Thumbnail */}
+  <div className="d-flex align-items-center gap-3 p-3 rounded-3 mb-2"
+    style={{ background: '#fff', border: '1px solid #e9ecef' }}>
     <div style={{ width: 56, height: 56, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f1f3f5' }}>
       {course.image
-        ? <img src={course.image} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        ? <img src={course.image} alt={course.title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={e => { e.target.style.display = 'none'; }} />
         : <div className="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
             <FaBookOpen />
           </div>
       }
     </div>
-
-    {/* Info */}
     <div className="flex-grow-1 min-w-0">
       <div className="d-flex align-items-center gap-2 flex-wrap">
         <span className="fw-semibold" style={{ fontSize: 15 }}>{course.title}</span>
         {course.category && (
-          <span className="badge rounded-pill px-2" style={{ background: '#e7f3ff', color: '#0d6efd', fontSize: 11 }}>
+          <span className="badge rounded-pill px-2"
+            style={{ background: '#e7f3ff', color: '#0d6efd', fontSize: 11 }}>
             {course.category}
           </span>
         )}
-        <span className={`badge rounded-pill px-2 ${course.is_published ? 'bg-success' : 'bg-warning text-dark'}`} style={{ fontSize: 11 }}>
+        <span className={`badge rounded-pill px-2 ${course.is_published ? 'bg-success' : 'bg-warning text-dark'}`}
+          style={{ fontSize: 11 }}>
           {course.is_published ? '● Active' : '⏳ Upcoming'}
         </span>
       </div>
@@ -218,31 +456,19 @@ const CourseRow = ({ course, onEdit, onDelete, onToggle }) => (
         {course.enrolled_count > 0 && ` · ${course.enrolled_count} enrolled`}
       </div>
     </div>
-
-    {/* Actions */}
     <div className="d-flex align-items-center gap-2 flex-shrink-0">
       <div className="form-check form-switch mb-0 me-1">
-        <input
-          className="form-check-input" type="checkbox" role="switch"
+        <input className="form-check-input" type="checkbox" role="switch"
           checked={!!course.is_published} onChange={() => onToggle(course)}
           style={{ cursor: 'pointer' }}
-          title={course.is_published ? 'Set as Upcoming' : 'Set as Active'}
-        />
+          title={course.is_published ? 'Set as Upcoming' : 'Set as Active'} />
       </div>
-      <button
-        className="btn btn-sm btn-light rounded-circle"
-        style={{ width: 34, height: 34 }}
-        onClick={() => onEdit(course)}
-        title="Edit"
-      >
+      <button className="btn btn-sm btn-light rounded-circle" style={{ width: 34, height: 34 }}
+        onClick={() => onEdit(course)} title="Edit">
         <FaEdit style={{ color: '#0d6efd' }} />
       </button>
-      <button
-        className="btn btn-sm btn-light rounded-circle"
-        style={{ width: 34, height: 34 }}
-        onClick={() => onDelete(course.id)}
-        title="Delete"
-      >
+      <button className="btn btn-sm btn-light rounded-circle" style={{ width: 34, height: 34 }}
+        onClick={() => onDelete(course.id)} title="Delete">
         <FaTrash style={{ color: '#dc3545' }} />
       </button>
     </div>
@@ -251,10 +477,10 @@ const CourseRow = ({ course, onEdit, onDelete, onToggle }) => (
 
 // ── Main Page ────────────────────────────────────────────────────
 const AdminCourses = () => {
-  const [courses,   setCourses]   = useState([]);
-  const [modal,     setModal]     = useState(false);
-  const [editing,   setEditing]   = useState(null);
-  const [loading,   setLoading]   = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [modal,   setModal]   = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => { fetchCourses(); }, []);
 
@@ -266,48 +492,41 @@ const AdminCourses = () => {
   };
 
   const openCreate = () => { setEditing(null); setModal(true); };
-  const openEdit   = (c)  => { setEditing(c);   setModal(true); };
-  const closeModal = ()   => { setModal(false);  setEditing(null); };
+  const openEdit   = (c)  => { setEditing(toForm(c)); setModal(true); };
+  const closeModal = ()   => { setModal(false); setEditing(null); };
+
+  const toForm = (c) => ({
+    id: c.id, title: c.title || '', slug: c.slug || '',
+    description: c.description || '', full_description: c.full_description || '',
+    price: c.price ?? '', image: c.image || '', imageFile: null,
+    preview: c.image || '', category: c.category || '', is_published: !!c.is_published
+  });
 
   const handleSave = async (form) => {
     setLoading(true);
     try {
       let imageUrl = form.image || form.preview || '';
-
       if (form.imageFile) {
         const up = await uploadAPI.uploadImage(form.imageFile);
         if (up.success) imageUrl = up.imageUrl;
         else { toast.error('Image upload failed'); return; }
       }
-
       const payload = {
-        title:           form.title,
-        slug:            form.slug,
-        description:     form.description,
-        full_description: form.full_description,
-        price:           form.price,
-        image:           imageUrl,
-        category:        form.category,
-        is_published:    form.is_published
+        title: form.title, slug: form.slug,
+        description: form.description, full_description: form.full_description,
+        price: form.price, image: imageUrl,
+        category: form.category, is_published: form.is_published
       };
-
-      const res = editing
-        ? await courseAPI.updateCourse(editing.id, payload)
+      const res = form.id
+        ? await courseAPI.updateCourse(form.id, payload)
         : await courseAPI.createCourse(payload);
-
       if (res.success) {
-        toast.success(editing ? 'Course updated' : 'Course created');
-        closeModal();
-        fetchCourses();
-      } else {
-        toast.error(res.message || 'Something went wrong');
-      }
+        toast.success(form.id ? 'Course updated' : 'Course created');
+        closeModal(); fetchCourses();
+      } else toast.error(res.message || 'Something went wrong');
     } catch (err) {
-      console.error(err);
-      toast.error('Something went wrong');
-    } finally {
-      setLoading(false);
-    }
+      console.error(err); toast.error('Something went wrong');
+    } finally { setLoading(false); }
   };
 
   const handleDelete = async (id) => {
@@ -330,28 +549,10 @@ const AdminCourses = () => {
   const active   = courses.filter(c =>  c.is_published);
   const upcoming = courses.filter(c => !c.is_published);
 
-  // Map course object to form shape for editing
-  const toForm = (c) => ({
-    title:            c.title            || '',
-    slug:             c.slug             || '',
-    description:      c.description      || '',
-    full_description: c.full_description || '',
-    price:            c.price            ?? '',
-    image:            c.image            || '',
-    imageFile:        null,
-    preview:          c.image            || '',
-    category:         c.category         || '',
-    is_published:     !!c.is_published,
-    id:               c.id
-  });
-
   return (
     <div className="d-flex">
       <AdminSidebar />
-
       <div className="flex-grow-1 p-4 bg-light" style={{ minHeight: '100vh' }}>
-
-        {/* Header */}
         <div className="d-flex align-items-center justify-content-between mb-4">
           <h1 className="fw-bold mb-0">Courses</h1>
           <button className="btn btn-primary d-flex align-items-center gap-2" onClick={openCreate}>
@@ -359,9 +560,9 @@ const AdminCourses = () => {
           </button>
         </div>
 
-        {/* Course list */}
         {courses.length === 0 ? (
-          <div className="text-center py-5 rounded-3" style={{ background: '#fff', border: '1px dashed #dee2e6' }}>
+          <div className="text-center py-5 rounded-3"
+            style={{ background: '#fff', border: '1px dashed #dee2e6' }}>
             <FaBookOpen size={40} className="text-muted mb-3" />
             <p className="fw-semibold text-muted mb-1">No courses yet</p>
             <p className="text-muted small mb-3">Create your first course to get started</p>
@@ -371,41 +572,27 @@ const AdminCourses = () => {
           </div>
         ) : (
           <div className="card border-0 shadow-sm p-3">
-
-            {/* Active */}
             {active.length > 0 && (
               <div className="mb-4">
                 <div className="d-flex align-items-center gap-2 mb-2">
-                  <span className="fw-semibold text-muted small text-uppercase" style={{ letterSpacing: 1 }}>
-                    Active
-                  </span>
+                  <span className="fw-semibold text-muted small text-uppercase" style={{ letterSpacing: 1 }}>Active</span>
                   <span className="badge bg-success rounded-pill">{active.length}</span>
                 </div>
                 {active.map(c => (
                   <CourseRow key={c.id} course={c}
-                    onEdit={() => openEdit(toForm(c))}
-                    onDelete={handleDelete}
-                    onToggle={handleToggle}
-                  />
+                    onEdit={openEdit} onDelete={handleDelete} onToggle={handleToggle} />
                 ))}
               </div>
             )}
-
-            {/* Upcoming */}
             {upcoming.length > 0 && (
               <div>
                 <div className="d-flex align-items-center gap-2 mb-2">
-                  <span className="fw-semibold text-muted small text-uppercase" style={{ letterSpacing: 1 }}>
-                    Upcoming
-                  </span>
+                  <span className="fw-semibold text-muted small text-uppercase" style={{ letterSpacing: 1 }}>Upcoming</span>
                   <span className="badge bg-warning text-dark rounded-pill">{upcoming.length}</span>
                 </div>
                 {upcoming.map(c => (
                   <CourseRow key={c.id} course={c}
-                    onEdit={() => openEdit(toForm(c))}
-                    onDelete={handleDelete}
-                    onToggle={handleToggle}
-                  />
+                    onEdit={openEdit} onDelete={handleDelete} onToggle={handleToggle} />
                 ))}
               </div>
             )}
@@ -413,14 +600,8 @@ const AdminCourses = () => {
         )}
       </div>
 
-      {/* Modal */}
-      <CourseModal
-        open={modal}
-        onClose={closeModal}
-        onSave={handleSave}
-        initial={editing}
-        loading={loading}
-      />
+      <CourseModal open={modal} onClose={closeModal} onSave={handleSave}
+        initial={editing} loading={loading} />
     </div>
   );
 };

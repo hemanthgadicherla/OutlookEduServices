@@ -274,6 +274,11 @@ app.use(
 );
 
 app.use(
+  '/api/curriculum',
+  require('./routes/curriculum')
+);
+
+app.use(
   '/api/payments',
   require('./routes/payments')
 );

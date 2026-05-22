@@ -9,6 +9,65 @@ import { lmsAPI } from '../services/api';
 import { getUser } from '../utils/auth';
 import { toast } from 'react-toastify';
 
+// ── Smart video player — handles YouTube, Bunny Stream, direct URL ──
+const VideoPlayer = ({ url, source, title }) => {
+  if (!url) return null;
+
+  // Resolve embed URL based on source
+  const getEmbedUrl = () => {
+    const s = source || detectSource(url);
+    if (s === 'youtube') {
+      // Handle all YouTube URL formats
+      const match = url.match(
+        /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+      );
+      const id = match?.[1];
+      return id
+        ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&autoplay=0`
+        : url;
+    }
+    if (s === 'bunny') {
+      // Bunny Stream iframe URLs are used directly
+      return url;
+    }
+    // Direct URL — use native video element
+    return null;
+  };
+
+  const detectSource = (u) => {
+    if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+    if (u.includes('mediadelivery.net') || u.includes('bunnycdn')) return 'bunny';
+    return 'url';
+  };
+
+  const embedUrl = getEmbedUrl();
+  const resolvedSource = source || detectSource(url);
+
+  if (resolvedSource === 'url' || !embedUrl) {
+    return (
+      <video
+        src={url}
+        controls
+        style={{ width: '100%', height: '100%', background: '#000' }}
+        title={title}
+      >
+        Your browser does not support the video tag.
+      </video>
+    );
+  }
+
+  return (
+    <iframe
+      src={embedUrl}
+      title={title}
+      style={{ width: '100%', height: '100%', border: 'none' }}
+      allowFullScreen
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      referrerPolicy="strict-origin-when-cross-origin"
+    />
+  );
+};
+
 const LMSCourseViewer = () => {
   const { id }   = useParams();
   const navigate = useNavigate();
@@ -160,15 +219,7 @@ const LMSCourseViewer = () => {
               {/* Video player */}
               <div style={{ background: '#000', aspectRatio: '16/9', maxHeight: '60vh', position: 'relative' }}>
                 {activeLesson.video_url ? (
-                  <iframe
-                    src={activeLesson.video_url.includes('youtube.com') || activeLesson.video_url.includes('youtu.be')
-                      ? activeLesson.video_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/')
-                      : activeLesson.video_url}
-                    title={activeLesson.title}
-                    style={{ width: '100%', height: '100%', border: 'none' }}
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  />
+                  <VideoPlayer url={activeLesson.video_url} source={activeLesson.video_source} title={activeLesson.title} />
                 ) : (
                   <div className="d-flex flex-column align-items-center justify-content-center h-100 text-white">
                     <FaPlay size={48} style={{ color: 'rgba(255,255,255,0.2)', marginBottom: 16 }} />
