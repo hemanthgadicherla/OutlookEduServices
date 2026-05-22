@@ -358,6 +358,55 @@ const markNotificationRead = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/lms/course/:id/suggestions
+// Returns other paid courses so the viewer can show "Up Next"
+// ─────────────────────────────────────────────────────────────
+const getCourseSuggestions = async (req, res) => {
+  try {
+    const userId   = req.user.id;
+    const courseId = parseInt(req.params.id);
+
+    const { data: user } = await supabase
+      .from('users').select('email').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const { data: paidRegs } = await supabase
+      .from('registrations')
+      .select('course_id, selected_course')
+      .eq('email', user.email)
+      .eq('payment_status', 'paid');
+
+    if (!paidRegs || paidRegs.length === 0)
+      return res.json({ success: true, data: { other_courses: [] } });
+
+    const courseIds   = paidRegs.filter(r => r.course_id && r.course_id !== courseId).map(r => r.course_id);
+    const courseNames = paidRegs.filter(r => !r.course_id).map(r => r.selected_course);
+
+    let others = [];
+    if (courseIds.length > 0) {
+      const { data } = await supabase
+        .from('courses').select('id, title, description, image, category').in('id', courseIds);
+      if (data) others = [...others, ...data];
+    }
+    if (courseNames.length > 0) {
+      const { data } = await supabase
+        .from('courses').select('id, title, description, image, category').in('title', courseNames)
+        .neq('id', courseId);
+      if (data) others = [...others, ...data];
+    }
+
+    // Deduplicate and exclude current course
+    const seen = new Set([courseId]);
+    const unique = others.filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; });
+
+    return res.json({ success: true, data: { other_courses: unique.slice(0, 5) } });
+  } catch (err) {
+    console.error('getCourseSuggestions error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch suggestions' });
+  }
+};
+
 module.exports = {
   getUserCourses,
   getCourseContent,
@@ -366,5 +415,6 @@ module.exports = {
   getCertificates,
   generateCertificate,
   getNotifications,
-  markNotificationRead
+  markNotificationRead,
+  getCourseSuggestions
 };
