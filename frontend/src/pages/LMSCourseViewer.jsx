@@ -303,27 +303,48 @@ const LMSCourseViewer = () => {
                   {expandedMods[mod.id] ? <FaChevronDown size={11} /> : <FaChevronRight size={11} />}
                 </button>
 
-                {expandedMods[mod.id] && (mod.lessons || []).map(lesson => (
-                  <button
-                    key={lesson.id}
-                    onClick={() => setActiveLesson(lesson)}
-                    className="d-flex align-items-center gap-2 w-100 px-3 py-2 border-0 text-start"
-                    style={{
-                      background: activeLesson?.id === lesson.id ? 'rgba(99,102,241,0.15)' : 'transparent',
-                      borderLeft: activeLesson?.id === lesson.id ? '3px solid #6366f1' : '3px solid transparent',
-                      color: activeLesson?.id === lesson.id ? '#fff' : 'rgba(255,255,255,0.55)',
-                      fontSize: 13, cursor: 'pointer'
-                    }}>
-                    {lesson.completed
-                      ? <FaCheckCircle size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
-                      : <FaCircle size={13} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />}
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {lesson.title}
-                    </span>
-                    {lesson.video_url && <FaPlay size={9} style={{ marginLeft: 'auto', flexShrink: 0, color: 'rgba(255,255,255,0.3)' }} />}
-                    {lesson.content && !lesson.video_url && <FaFilePdf size={9} style={{ marginLeft: 'auto', flexShrink: 0, color: 'rgba(255,255,255,0.3)' }} />}
-                  </button>
-                ))}
+                {expandedMods[mod.id] && (mod.lessons || []).map(lesson => {
+                  const isLocked = !lesson.is_free && !lesson.completed && activeLesson?.id !== lesson.id;
+                  return (
+                    <button
+                      key={lesson.id}
+                      onClick={() => {
+                        if (!lesson.is_free && lesson.video_url) {
+                          // Paid users can access all lessons — is_free just marks free preview
+                          setActiveLesson(lesson);
+                        } else {
+                          setActiveLesson(lesson);
+                        }
+                      }}
+                      className="d-flex align-items-center gap-2 w-100 px-3 py-2 border-0 text-start"
+                      style={{
+                        background: activeLesson?.id === lesson.id ? 'rgba(99,102,241,0.15)' : 'transparent',
+                        borderLeft: activeLesson?.id === lesson.id ? '3px solid #6366f1' : '3px solid transparent',
+                        color: activeLesson?.id === lesson.id ? '#fff' : 'rgba(255,255,255,0.55)',
+                        fontSize: 13, cursor: 'pointer'
+                      }}>
+                      {lesson.completed
+                        ? <FaCheckCircle size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
+                        : lesson.is_free
+                          ? <FaCircle size={13} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                          : <FaLock size={11} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                      }
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        {lesson.title}
+                      </span>
+                      {lesson.is_free && (
+                        <span style={{ fontSize: 9, color: '#22c55e', flexShrink: 0, border: '1px solid #22c55e', borderRadius: 4, padding: '1px 4px' }}>
+                          FREE
+                        </span>
+                      )}
+                      {lesson.duration && (
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+                          {lesson.duration}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             ))}
           </motion.div>

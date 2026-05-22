@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import {
   FaPlus, FaEdit, FaTrash, FaTimes, FaBookOpen,
   FaChevronDown, FaChevronRight, FaYoutube, FaVideo,
-  FaLink, FaGripVertical, FaCheck
+  FaLock, FaLockOpen, FaCheck, FaGripVertical
 } from 'react-icons/fa';
 
 const EMPTY_COURSE = {
@@ -14,112 +14,126 @@ const EMPTY_COURSE = {
   category: '', is_published: true
 };
 
-const EMPTY_LESSON = {
-  title: '', video_url: '', video_source: 'youtube',
-  content: '', is_free: false, duration: ''
-};
-
 const CATEGORIES = ['Marketing', 'Finance', 'Language', 'Technology', 'Business', 'Design', 'Other'];
 
 const toSlug = (str) =>
   str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
 
-// ── Video source badge ───────────────────────────────────────────
-const SourceBadge = ({ source }) => {
-  if (source === 'youtube') return (
-    <span className="badge rounded-pill d-flex align-items-center gap-1"
-      style={{ background: '#fee2e2', color: '#dc2626', fontSize: 10 }}>
-      <FaYoutube size={10} /> YouTube
-    </span>
-  );
-  if (source === 'bunny') return (
-    <span className="badge rounded-pill d-flex align-items-center gap-1"
-      style={{ background: '#fef3c7', color: '#d97706', fontSize: 10 }}>
-      <FaVideo size={10} /> Bunny Stream
-    </span>
-  );
-  return (
-    <span className="badge rounded-pill d-flex align-items-center gap-1"
-      style={{ background: '#e0e7ff', color: '#4338ca', fontSize: 10 }}>
-      <FaLink size={10} /> URL
-    </span>
-  );
+const VIDEO_PLACEHOLDER = {
+  youtube: 'YouTube URL  e.g. https://youtube.com/watch?v=...',
+  bunny:   'Bunny Stream embed URL  e.g. https://iframe.mediadelivery.net/embed/...',
 };
 
-// ── Lesson Form (inline inside chapter) ─────────────────────────
-const LessonForm = ({ onSave, onCancel, initial }) => {
-  const [f, setF] = useState(initial || EMPTY_LESSON);
-  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+// ── Inline lesson row — add / edit in one line ───────────────────
+const LessonRow = ({ lesson, moduleId, onRefresh, isNew, onCancelNew }) => {
+  const [title,  setTitle]  = useState(lesson?.title        || '');
+  const [source, setSource] = useState(lesson?.video_source || 'youtube');
+  const [url,    setUrl]    = useState(lesson?.video_url    || '');
+  const [locked, setLocked] = useState(lesson ? !lesson.is_free : true);
+  const [saving, setSaving] = useState(false);
 
-  const videoHelp = {
-    youtube: 'Paste full YouTube URL: https://www.youtube.com/watch?v=...',
-    bunny:   'Paste Bunny Stream embed URL: https://iframe.mediadelivery.net/embed/...',
-    url:     'Paste any direct video URL (.mp4, .m3u8, etc.)'
+  const save = async () => {
+    if (!title.trim()) { toast.error('Lesson title is required'); return; }
+    setSaving(true);
+    const payload = {
+      title: title.trim(),
+      video_source: source,
+      video_url: url.trim() || null,
+      is_free: !locked,
+      duration: lesson?.duration || null,
+      content:  lesson?.content  || null,
+    };
+    const res = lesson?.id
+      ? await curriculumAPI.updateLesson(lesson.id, payload)
+      : await curriculumAPI.createLesson(moduleId, payload);
+    setSaving(false);
+    if (res.success) {
+      toast.success(lesson?.id ? 'Lesson updated' : 'Lesson added');
+      if (isNew && onCancelNew) onCancelNew();
+      onRefresh();
+    } else toast.error(res.message || 'Failed to save lesson');
+  };
+
+  const del = async () => {
+    if (!lesson?.id) return;
+    if (!window.confirm('Delete this lesson?')) return;
+    const res = await curriculumAPI.deleteLesson(lesson.id);
+    if (res.success) { toast.success('Lesson deleted'); onRefresh(); }
+    else toast.error(res.message);
+  };
+
+  const toggleLock = async () => {
+    const next = !locked;
+    setLocked(next);
+    if (lesson?.id) {
+      await curriculumAPI.updateLesson(lesson.id, { is_free: !next });
+      onRefresh();
+    }
   };
 
   return (
-    <div className="p-3 rounded-3 mt-2" style={{ background: '#f0f4ff', border: '1px solid #c7d2fe' }}>
-      <div className="row g-2 mb-2">
-        <div className="col-md-6">
-          <input type="text" className="form-control form-control-sm"
-            placeholder="Lesson title *" value={f.title}
-            onChange={e => set('title', e.target.value)} />
-        </div>
-        <div className="col-md-3">
-          <input type="text" className="form-control form-control-sm"
-            placeholder="Duration (e.g. 12:30)" value={f.duration}
-            onChange={e => set('duration', e.target.value)} />
-        </div>
-        <div className="col-md-3">
-          <div className="form-check mt-1">
-            <input type="checkbox" className="form-check-input" id={`free_${initial?.id || 'new'}`}
-              checked={f.is_free} onChange={e => set('is_free', e.target.checked)} />
-            <label className="form-check-label small" htmlFor={`free_${initial?.id || 'new'}`}>
-              Free preview
-            </label>
-          </div>
-        </div>
-      </div>
+    <div className="d-flex align-items-center gap-2 py-2 px-2 rounded-2 mb-1"
+      style={{ background: isNew ? '#f0f7ff' : '#f8fafc', border: `1px solid ${isNew ? '#bfdbfe' : '#e9ecef'}` }}>
 
-      {/* Video source selector */}
-      <div className="row g-2 mb-2">
-        <div className="col-md-3">
-          <select className="form-select form-select-sm" value={f.video_source}
-            onChange={e => set('video_source', e.target.value)}>
-            <option value="youtube">YouTube</option>
-            <option value="bunny">Bunny Stream</option>
-            <option value="url">Direct URL</option>
-          </select>
-        </div>
-        <div className="col-md-9">
-          <input type="text" className="form-control form-control-sm"
-            placeholder={videoHelp[f.video_source]}
-            value={f.video_url} onChange={e => set('video_url', e.target.value)} />
-        </div>
-      </div>
+      {/* Drag handle */}
+      {!isNew && <FaGripVertical className="text-muted flex-shrink-0" style={{ cursor: 'grab', fontSize: 11 }} />}
 
-      <textarea className="form-control form-control-sm mb-2" rows="2"
-        placeholder="Lesson notes / text content (optional)"
-        value={f.content} onChange={e => set('content', e.target.value)} />
+      {/* Lesson title */}
+      <input
+        type="text" className="form-control form-control-sm"
+        style={{ minWidth: 120, maxWidth: 200 }}
+        placeholder="Lesson name"
+        value={title} onChange={e => setTitle(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && save()}
+      />
 
-      <div className="d-flex gap-2">
-        <button type="button" className="btn btn-primary btn-sm d-flex align-items-center gap-1"
-          onClick={() => { if (!f.title.trim()) { toast.error('Lesson title required'); return; } onSave(f); }}>
-          <FaCheck size={11} /> Save Lesson
-        </button>
-        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
+      {/* Source dropdown */}
+      <select className="form-select form-select-sm flex-shrink-0" style={{ width: 140 }}
+        value={source} onChange={e => setSource(e.target.value)}>
+        <option value="youtube">🎬 YouTube</option>
+        <option value="bunny">🐰 Bunny Stream</option>
+      </select>
+
+      {/* URL input */}
+      <input
+        type="text" className="form-control form-control-sm flex-grow-1"
+        placeholder={VIDEO_PLACEHOLDER[source] || 'Video URL'}
+        value={url} onChange={e => setUrl(e.target.value)}
+      />
+
+      {/* Lock / Unlock */}
+      <button type="button"
+        className={`btn btn-sm flex-shrink-0 d-flex align-items-center gap-1 ${locked ? 'btn-danger' : 'btn-success'}`}
+        style={{ fontSize: 12, whiteSpace: 'nowrap' }}
+        onClick={toggleLock}
+        title={locked ? 'Locked — click to unlock (free preview)' : 'Unlocked — click to lock'}>
+        {locked ? <><FaLock size={11} /> Locked</> : <><FaLockOpen size={11} /> Free</>}
+      </button>
+
+      {/* Save */}
+      <button type="button"
+        className="btn btn-primary btn-sm flex-shrink-0 d-flex align-items-center gap-1"
+        onClick={save} disabled={saving} style={{ fontSize: 12 }}>
+        {saving
+          ? <span className="spinner-border spinner-border-sm" />
+          : <><FaCheck size={11} /> Save</>}
+      </button>
+
+      {/* Delete / Cancel */}
+      {isNew
+        ? <button type="button" className="btn btn-sm btn-outline-secondary flex-shrink-0"
+            onClick={onCancelNew}><FaTimes size={11} /></button>
+        : <button type="button" className="btn btn-sm btn-outline-danger flex-shrink-0"
+            onClick={del}><FaTrash size={11} /></button>
+      }
     </div>
   );
 };
 
-// ── Chapter (Module) block ───────────────────────────────────────
+// ── Chapter block ────────────────────────────────────────────────
 const ChapterBlock = ({ module, courseId, onRefresh }) => {
   const [expanded,     setExpanded]     = useState(true);
   const [addingLesson, setAddingLesson] = useState(false);
-  const [editLesson,   setEditLesson]   = useState(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleVal,     setTitleVal]     = useState(module.title);
 
@@ -137,35 +151,19 @@ const ChapterBlock = ({ module, courseId, onRefresh }) => {
     else toast.error(res.message);
   };
 
-  const saveLesson = async (f) => {
-    const payload = {
-      title: f.title, video_url: f.video_url, video_source: f.video_source,
-      content: f.content, is_free: f.is_free, duration: f.duration
-    };
-    const res = editLesson
-      ? await curriculumAPI.updateLesson(editLesson.id, payload)
-      : await curriculumAPI.createLesson(module.id, payload);
-    if (res.success) {
-      toast.success(editLesson ? 'Lesson updated' : 'Lesson added');
-      setAddingLesson(false); setEditLesson(null); onRefresh();
-    } else toast.error(res.message);
-  };
-
-  const deleteLesson = async (id) => {
-    if (!window.confirm('Delete this lesson?')) return;
-    const res = await curriculumAPI.deleteLesson(id);
-    if (res.success) { toast.success('Lesson deleted'); onRefresh(); }
-    else toast.error(res.message);
-  };
+  const lessons = module.course_lessons || [];
 
   return (
     <div className="rounded-3 mb-3" style={{ border: '1px solid #e2e8f0', background: '#fff' }}>
       {/* Chapter header */}
-      <div className="d-flex align-items-center gap-2 p-3" style={{ borderBottom: expanded ? '1px solid #f1f5f9' : 'none' }}>
+      <div className="d-flex align-items-center gap-2 p-3"
+        style={{ borderBottom: expanded ? '1px solid #f1f5f9' : 'none', background: '#f8fafc', borderRadius: expanded ? '12px 12px 0 0' : 12 }}>
         <FaGripVertical className="text-muted" style={{ cursor: 'grab', flexShrink: 0 }} />
-        <button type="button" className="btn btn-sm btn-light p-1" onClick={() => setExpanded(e => !e)}>
+        <button type="button" className="btn btn-sm btn-light p-1 flex-shrink-0"
+          onClick={() => setExpanded(e => !e)}>
           {expanded ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />}
         </button>
+
         {editingTitle ? (
           <input autoFocus className="form-control form-control-sm flex-grow-1"
             value={titleVal} onChange={e => setTitleVal(e.target.value)}
@@ -173,11 +171,15 @@ const ChapterBlock = ({ module, courseId, onRefresh }) => {
         ) : (
           <span className="fw-semibold flex-grow-1" style={{ fontSize: 14 }}>{module.title}</span>
         )}
-        <span className="text-muted small">{(module.course_lessons || []).length} lessons</span>
-        <button type="button" className="btn btn-sm btn-light p-1" onClick={() => setEditingTitle(e => !e)} title="Rename">
+
+        <span className="text-muted small flex-shrink-0">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</span>
+
+        <button type="button" className="btn btn-sm btn-light p-1 flex-shrink-0"
+          onClick={() => setEditingTitle(e => !e)} title="Rename chapter">
           <FaEdit size={12} style={{ color: '#0d6efd' }} />
         </button>
-        <button type="button" className="btn btn-sm btn-light p-1" onClick={deleteChapter} title="Delete chapter">
+        <button type="button" className="btn btn-sm btn-light p-1 flex-shrink-0"
+          onClick={deleteChapter} title="Delete chapter">
           <FaTrash size={12} style={{ color: '#dc3545' }} />
         </button>
       </div>
@@ -185,37 +187,21 @@ const ChapterBlock = ({ module, courseId, onRefresh }) => {
       {/* Lessons */}
       {expanded && (
         <div className="p-3">
-          {(module.course_lessons || []).map(lesson => (
-            <div key={lesson.id}>
-              {editLesson?.id === lesson.id ? (
-                <LessonForm initial={editLesson} onSave={saveLesson} onCancel={() => setEditLesson(null)} />
-              ) : (
-                <div className="d-flex align-items-center gap-2 py-2 px-2 rounded-2 mb-1"
-                  style={{ background: '#f8fafc', border: '1px solid #e9ecef' }}>
-                  <FaGripVertical className="text-muted" style={{ cursor: 'grab', fontSize: 11 }} />
-                  <span className="flex-grow-1 small fw-semibold">{lesson.title}</span>
-                  {lesson.video_source && <SourceBadge source={lesson.video_source} />}
-                  {lesson.duration && <span className="text-muted" style={{ fontSize: 11 }}>{lesson.duration}</span>}
-                  {lesson.is_free && <span className="badge bg-success rounded-pill" style={{ fontSize: 10 }}>Free</span>}
-                  <button type="button" className="btn btn-sm btn-light p-1"
-                    onClick={() => setEditLesson(lesson)}>
-                    <FaEdit size={11} style={{ color: '#0d6efd' }} />
-                  </button>
-                  <button type="button" className="btn btn-sm btn-light p-1"
-                    onClick={() => deleteLesson(lesson.id)}>
-                    <FaTrash size={11} style={{ color: '#dc3545' }} />
-                  </button>
-                </div>
-              )}
-            </div>
+          {/* Existing lessons */}
+          {lessons.map(lesson => (
+            <LessonRow key={lesson.id} lesson={lesson} moduleId={module.id} onRefresh={onRefresh} />
           ))}
 
-          {addingLesson && !editLesson && (
-            <LessonForm onSave={saveLesson} onCancel={() => setAddingLesson(false)} />
+          {/* New lesson row */}
+          {addingLesson && (
+            <LessonRow isNew moduleId={module.id} onRefresh={onRefresh}
+              onCancelNew={() => setAddingLesson(false)} />
           )}
 
-          {!addingLesson && !editLesson && (
-            <button type="button" className="btn btn-sm btn-outline-primary mt-1 d-flex align-items-center gap-1"
+          {/* Add lesson button */}
+          {!addingLesson && (
+            <button type="button"
+              className="btn btn-sm btn-outline-primary mt-1 d-flex align-items-center gap-1"
               onClick={() => setAddingLesson(true)}>
               <FaPlus size={10} /> Add Lesson
             </button>
