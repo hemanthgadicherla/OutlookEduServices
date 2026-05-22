@@ -276,7 +276,7 @@ const LMSCourseViewer = () => {
   const [loading,       setLoading]       = useState(true);
   const [activeLesson,  setActiveLesson]  = useState(null);
   const [expandedMods,  setExpandedMods]  = useState({});
-  const [sidebarOpen,   setSidebarOpen]   = useState(true);
+  const [sidebarOpen,   setSidebarOpen]   = useState(() => window.innerWidth >= 992);
   const [certGenerated, setCertGenerated] = useState(false);
   const [showUpNext,    setShowUpNext]    = useState(false);
   const [suggestions,   setSuggestions]   = useState([]);
@@ -438,11 +438,11 @@ const LMSCourseViewer = () => {
       {/* ── Body: sidebar + content ── */}
       <div className="d-flex flex-grow-1" style={{ minHeight: 0 }}>
 
-        {/* ── LEFT SIDEBAR ── */}
+        {/* ── LEFT SIDEBAR — desktop inline ── */}
         <AnimatePresence initial={false}>
           {sidebarOpen && (
             <motion.div
-              key="sidebar"
+              key="sidebar-desktop"
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: 300, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
@@ -470,33 +470,96 @@ const LMSCourseViewer = () => {
           )}
         </AnimatePresence>
 
+        {/* ── LEFT SIDEBAR — mobile overlay drawer ── */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <div className="d-lg-none" style={{ position: 'fixed', inset: 0, zIndex: 300 }}>
+              {/* backdrop */}
+              <motion.div
+                key="mob-backdrop"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setSidebarOpen(false)}
+                style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }}
+              />
+              {/* drawer */}
+              <motion.div
+                key="mob-drawer"
+                initial={{ x: -300 }} animate={{ x: 0 }} exit={{ x: -300 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                style={{
+                  position: 'absolute', top: 0, left: 0, bottom: 0,
+                  width: 300, background: '#131c2e',
+                  display: 'flex', flexDirection: 'column',
+                  borderRight: '1px solid rgba(255,255,255,0.07)',
+                }}
+              >
+                {/* close button */}
+                <div className="d-flex align-items-center justify-content-between px-3"
+                  style={{ height: 48, borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
+                  <span className="fw-semibold text-white" style={{ fontSize: 13 }}>Lessons</span>
+                  <button onClick={() => setSidebarOpen(false)}
+                    className="btn btn-sm p-1"
+                    style={{ color: 'rgba(255,255,255,0.5)', background: 'none', border: 'none' }}>
+                    <FaTimes size={14} />
+                  </button>
+                </div>
+                <CourseSidebar
+                  data={data}
+                  activeLesson={activeLesson}
+                  expandedMods={expandedMods}
+                  setExpandedMods={setExpandedMods}
+                  setActiveLesson={(lesson) => { setActiveLesson(lesson); setSidebarOpen(false); }}
+                  setShowUpNext={setShowUpNext}
+                  completedLessons={completedLessons}
+                  totalLessons={totalLessons}
+                  progress={progress}
+                />
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
         {/* ── MAIN CONTENT ── */}
         <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0, overflowY: 'auto', background: '#0f172a' }}>
           {activeLesson ? (
             <>
-              {/* Video */}
-              <div style={{ background: '#000', aspectRatio: '16/9', maxHeight: '62vh', position: 'relative', flexShrink: 0 }}>
-                {(() => {
-                  const vUrl      = activeLesson.video_url;
-                  const needsSigned = vUrl?.startsWith('bunny:') || vUrl?.startsWith('storage:');
-                  if (needsSigned && !signedUrl) return (
-                    <div className="d-flex align-items-center justify-content-center h-100">
-                      <div className="spinner-border" style={{ color: '#6366f1' }} />
+              {/* Video — centred card, max 860 px wide → 16:9 gives ~484 px tall */}
+              <div style={{ background: '#050d1a', width: '100%', flexShrink: 0, padding: '16px 20px 8px' }}>
+                <div style={{ maxWidth: 860, margin: '0 auto' }}>
+                  <div style={{
+                    position: 'relative',
+                    paddingTop: '56.25%',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    background: '#000',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.55)',
+                  }}>
+                    <div style={{ position: 'absolute', inset: 0 }}>
+                      {(() => {
+                        const vUrl        = activeLesson.video_url;
+                        const needsSigned = vUrl?.startsWith('bunny:') || vUrl?.startsWith('storage:');
+                        if (needsSigned && !signedUrl) return (
+                          <div className="d-flex align-items-center justify-content-center h-100">
+                            <div className="spinner-border" style={{ color: '#6366f1' }} />
+                          </div>
+                        );
+                        const playUrl = needsSigned ? signedUrl : vUrl;
+                        const isBunny = vUrl?.startsWith('bunny:');
+                        return (
+                          <VideoPlayer url={playUrl}
+                            source={isBunny ? 'bunny' : vUrl?.startsWith('storage:') ? 'url' : undefined}
+                            title={activeLesson.title} />
+                        );
+                      })()}
+                      <AnimatePresence>
+                        {showUpNext && nextLesson && (
+                          <UpNextOverlay nextLesson={nextLesson} onGoNext={goNext} onDismiss={() => setShowUpNext(false)} />
+                        )}
+                      </AnimatePresence>
                     </div>
-                  );
-                  const playUrl = needsSigned ? signedUrl : vUrl;
-                  const isBunny = vUrl?.startsWith('bunny:');
-                  return (
-                    <VideoPlayer url={playUrl}
-                      source={isBunny ? 'bunny' : vUrl?.startsWith('storage:') ? 'url' : undefined}
-                      title={activeLesson.title} />
-                  );
-                })()}
-                <AnimatePresence>
-                  {showUpNext && nextLesson && (
-                    <UpNextOverlay nextLesson={nextLesson} onGoNext={goNext} onDismiss={() => setShowUpNext(false)} />
-                  )}
-                </AnimatePresence>
+                  </div>
+                </div>
               </div>
 
               {/* Lesson info */}
