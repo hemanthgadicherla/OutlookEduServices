@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { logout as clearTokens, getUser } from '../utils/auth';
 import {
-  FaTachometerAlt, FaClipboardList, FaBookOpen,
+  FaTachometerAlt, FaClipboardList, FaLayerGroup,
   FaNewspaper, FaBullhorn, FaSignOutAlt
 } from 'react-icons/fa';
 
@@ -12,11 +12,11 @@ const AdminSidebar = () => {
   const user      = getUser();
 
   const menuItems = [
-    { name: 'Dashboard',      path: '/admin/dashboard',     icon: <FaTachometerAlt /> },
-    { name: 'Registrations',  path: '/admin/registrations', icon: <FaClipboardList /> },
-    { name: 'Courses',        path: '/admin/courses',       icon: <FaBookOpen /> },
-    { name: 'Blogs',          path: '/admin/blogs',         icon: <FaNewspaper /> },
-    { name: 'Leads',          path: '/admin/leads',         icon: <FaBullhorn /> },
+    { name: 'Dashboard',        path: '/admin/dashboard',     icon: <FaTachometerAlt /> },
+    { name: 'Registrations',    path: '/admin/registrations', icon: <FaClipboardList /> },
+    { name: 'Courses & LMS',   path: '/admin/courses',       icon: <FaLayerGroup /> },
+    { name: 'Blogs',            path: '/admin/blogs',         icon: <FaNewspaper /> },
+    { name: 'Leads',            path: '/admin/leads',         icon: <FaBullhorn /> },
   ];
 
   const handleLogout = () => {
