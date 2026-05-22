@@ -11,7 +11,8 @@ const {
   getNotifications,
   markNotificationRead,
   getCourseSuggestions,
-  getResume
+  getResume,
+  getLessonVideoUrl
 } = require('../controllers/lms');
 
 router.use(verifyToken); // all LMS routes require auth
@@ -23,6 +24,7 @@ router.post('/progress',                updateProgress);
 router.get('/stats',                    getStats);
 router.get('/certificates',             getCertificates);
 router.post('/certificate/generate',    generateCertificate);
+router.get('/lesson/:id/video-url',     getLessonVideoUrl);
 router.get('/course/:id/suggestions',   getCourseSuggestions);
 router.get('/notifications',            getNotifications);
 router.patch('/notifications/:id/read', markNotificationRead);

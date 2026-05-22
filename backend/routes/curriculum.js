@@ -8,7 +8,9 @@ const {
   deleteModule,
   createLesson,
   updateLesson,
-  deleteLesson
+  deleteLesson,
+  getVideoUploadUrl,
+  deleteVideo
 } = require('../controllers/curriculum');
 
 // All curriculum routes require admin auth
@@ -24,5 +26,9 @@ router.delete('/modules/:id',                 deleteModule);
 router.post('/modules/:moduleId/lessons',     createLesson);
 router.put('/lessons/:id',                    updateLesson);
 router.delete('/lessons/:id',                 deleteLesson);
+
+// Video hosting (Supabase Storage)
+router.post('/lessons/:id/upload-url',        getVideoUploadUrl);
+router.delete('/lessons/:id/video',           deleteVideo);
 
 module.exports = router;

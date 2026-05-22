@@ -192,6 +192,66 @@ const deleteLesson = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// POST /api/curriculum/lessons/:id/upload-url
+// Admin: returns a signed upload URL so the browser uploads
+// the video file directly to Supabase Storage (no server proxy).
+// Stores the storage path in video_url after URL generation.
+// ─────────────────────────────────────────────────────────────
+const getVideoUploadUrl = async (req, res) => {
+  try {
+    const { id }      = req.params;
+    const { filename } = req.body;
+
+    if (!filename) return res.status(400).json({ success: false, message: 'filename required' });
+
+    const ext      = filename.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const safeName = `${Date.now()}.${ext || 'mp4'}`;
+    const path     = `lessons/${id}/${safeName}`;
+
+    const { data, error } = await supabase.storage
+      .from('course-videos')
+      .createSignedUploadUrl(path);
+
+    if (error) {
+      console.error('upload-url error:', error.message);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+
+    // Pre-save the storage path so lesson knows where its video will live
+    await supabase.from('course_lessons')
+      .update({ video_url: `storage:${path}` })
+      .eq('id', id);
+
+    return res.json({ success: true, data: { signedUrl: data.signedUrl, token: data.token, path } });
+  } catch (err) {
+    console.error('getVideoUploadUrl error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to generate upload URL' });
+  }
+};
+
+// DELETE /api/curriculum/lessons/:id/video
+// Admin: removes video from storage and clears video_url
+const deleteVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: lesson } = await supabase
+      .from('course_lessons').select('video_url').eq('id', id).maybeSingle();
+
+    if (lesson?.video_url?.startsWith('storage:')) {
+      const path = lesson.video_url.replace('storage:', '');
+      await supabase.storage.from('course-videos').remove([path]);
+    }
+
+    await supabase.from('course_lessons').update({ video_url: null }).eq('id', id);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('deleteVideo error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete video' });
+  }
+};
+
 module.exports = {
   getModules,
   createModule,
@@ -199,5 +259,7 @@ module.exports = {
   deleteModule,
   createLesson,
   updateLesson,
-  deleteLesson
+  deleteLesson,
+  getVideoUploadUrl,
+  deleteVideo
 };

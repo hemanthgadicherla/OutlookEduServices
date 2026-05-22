@@ -359,6 +359,49 @@ const markNotificationRead = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────
+// GET /api/lms/lesson/:id/video-url
+// Returns a 2-hour signed URL for streaming a private Supabase
+// Storage video. Verifies user has paid access to the course.
+// ─────────────────────────────────────────────────────────────
+const getLessonVideoUrl = async (req, res) => {
+  try {
+    const userId   = req.user.id;
+    const lessonId = parseInt(req.params.id);
+
+    const { data: lesson } = await supabase
+      .from('course_lessons').select('id, video_url, module_id, is_free').eq('id', lessonId).maybeSingle();
+
+    if (!lesson) return res.status(404).json({ success: false, message: 'Lesson not found' });
+
+    if (!lesson.video_url?.startsWith('storage:'))
+      return res.status(400).json({ success: false, message: 'This lesson has no hosted video' });
+
+    // Verify paid access (free lessons skip the check)
+    if (!lesson.is_free) {
+      const { data: mod } = await supabase
+        .from('course_modules').select('course_id').eq('id', lesson.module_id).maybeSingle();
+      if (mod) {
+        const paidIds = await getPaidCourseIds(userId);
+        if (!paidIds.includes(mod.course_id))
+          return res.status(403).json({ success: false, message: 'Access denied' });
+      }
+    }
+
+    const path = lesson.video_url.replace('storage:', '');
+    const { data, error } = await supabase.storage
+      .from('course-videos')
+      .createSignedUrl(path, 7200); // 2-hour window
+
+    if (error) return res.status(500).json({ success: false, message: 'Could not generate stream URL' });
+
+    return res.json({ success: true, data: { url: data.signedUrl, expires_in: 7200 } });
+  } catch (err) {
+    console.error('getLessonVideoUrl error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to get video URL' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
 // GET /api/lms/resume  — last-touched lesson across all courses
 // Returns the most recently updated lesson_progress row so the
 // dashboard can show a "Continue Learning" card.
@@ -469,5 +512,6 @@ module.exports = {
   getNotifications,
   markNotificationRead,
   getCourseSuggestions,
-  getResume
+  getResume,
+  getLessonVideoUrl
 };
