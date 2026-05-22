@@ -60,7 +60,7 @@ exports.login = async (req, res) => {
     // Look up in admins table ONLY — not users table
     const { data: admin, error: adminError } = await supabase
       .from('admins')
-      .select('id, email, full_name, role, is_active')
+      .select('id, email, role')
       .eq('id', authData.user.id)
       .maybeSingle();
 
@@ -71,24 +71,20 @@ exports.login = async (req, res) => {
       });
     }
 
-    if (admin.is_active === false) {
-      return res.status(403).json({ success: false, message: 'This admin account has been disabled' });
-    }
+    // full_name lives in Supabase auth user_metadata
+    const full_name = authData.user?.user_metadata?.full_name || '';
 
-    // Generate new session_id and update last_login
+    // Update session_id
     const sessionId = crypto.randomBytes(32).toString('hex');
-    await supabase
-      .from('admins')
-      .update({ session_id: sessionId, last_login: new Date().toISOString() })
-      .eq('id', admin.id);
+    await supabase.from('admins').update({ session_id: sessionId }).eq('id', admin.id);
 
-    const token = signAdminToken(admin, sessionId);
+    const token = signAdminToken({ ...admin, full_name }, sessionId);
 
     return res.json({
       success: true,
       message: 'Login successful',
       token,
-      admin: { id: admin.id, email: admin.email, full_name: admin.full_name, role: admin.role }
+      admin: { id: admin.id, email: admin.email, full_name, role: admin.role }
     });
 
   } catch (err) {
@@ -131,18 +127,7 @@ exports.adminSignup = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
     }
 
-    // Check phone uniqueness in admins table
-    const { data: existingPhone } = await supabase
-      .from('admins')
-      .select('id')
-      .eq('phone', phone)
-      .maybeSingle();
-
-    if (existingPhone) {
-      return res.status(400).json({ success: false, message: 'This phone number is already registered' });
-    }
-
-    // Create Supabase Auth user
+    // Create Supabase Auth user (full_name + phone stored in user_metadata)
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -158,7 +143,7 @@ exports.adminSignup = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Failed to create admin account' });
     }
 
-    // Insert into admins table — NOT users table
+    // Insert into admins table — only columns that exist in the DB
     const { data: existingAdmin } = await supabase
       .from('admins')
       .select('id')
@@ -166,14 +151,11 @@ exports.adminSignup = async (req, res) => {
       .maybeSingle();
 
     if (existingAdmin) {
-      await supabase
-        .from('admins')
-        .update({ full_name, phone, role: 'admin', is_active: true })
-        .eq('id', authData.user.id);
+      await supabase.from('admins').update({ role: 'admin' }).eq('id', authData.user.id);
     } else {
       const { error: insertError } = await supabase
         .from('admins')
-        .insert([{ id: authData.user.id, email, full_name, phone, role: 'admin' }]);
+        .insert([{ id: authData.user.id, email, role: 'admin' }]);
 
       if (insertError) {
         console.error('Admin insert error:', insertError.message);
