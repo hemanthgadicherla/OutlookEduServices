@@ -413,11 +413,6 @@ const LMSCourseViewer = () => {
                         FREE
                       </span>
                     )}
-                    {lesson.duration && (
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
-                        {lesson.duration}
-                      </span>
-                    )}
                   </button>
                 ))}
               </div>

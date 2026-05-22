@@ -4,7 +4,7 @@ import { courseAPI, uploadAPI, curriculumAPI } from '../services/api';
 import { toast } from 'react-toastify';
 import {
   FaPlus, FaEdit, FaTrash, FaTimes, FaBookOpen,
-  FaChevronDown, FaChevronRight, FaYoutube, FaVideo,
+  FaChevronDown, FaChevronRight,
   FaLock, FaLockOpen, FaCheck, FaGripVertical
 } from 'react-icons/fa';
 
@@ -19,16 +19,10 @@ const CATEGORIES = ['Marketing', 'Finance', 'Language', 'Technology', 'Business'
 const toSlug = (str) =>
   str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
 
-const VIDEO_PLACEHOLDER = {
-  youtube: 'YouTube URL  e.g. https://youtube.com/watch?v=...',
-  bunny:   'Bunny Stream embed URL  e.g. https://iframe.mediadelivery.net/embed/...',
-};
-
 // ── Inline lesson row — add / edit in one line ───────────────────
 const LessonRow = ({ lesson, moduleId, onRefresh, isNew, onCancelNew }) => {
-  const [title,  setTitle]  = useState(lesson?.title        || '');
-  const [source, setSource] = useState(lesson?.video_source || 'youtube');
-  const [url,    setUrl]    = useState(lesson?.video_url    || '');
+  const [title,  setTitle]  = useState(lesson?.title     || '');
+  const [url,    setUrl]    = useState(lesson?.video_url || '');
   const [locked, setLocked] = useState(lesson ? !lesson.is_free : true);
   const [saving, setSaving] = useState(false);
 
@@ -36,12 +30,10 @@ const LessonRow = ({ lesson, moduleId, onRefresh, isNew, onCancelNew }) => {
     if (!title.trim()) { toast.error('Lesson title is required'); return; }
     setSaving(true);
     const payload = {
-      title: title.trim(),
-      video_source: source,
+      title:     title.trim(),
       video_url: url.trim() || null,
-      is_free: !locked,
-      duration: lesson?.duration || null,
-      content:  lesson?.content  || null,
+      is_free:   !locked,
+      content:   lesson?.content || null,
     };
     const res = lesson?.id
       ? await curriculumAPI.updateLesson(lesson.id, payload)
@@ -87,17 +79,10 @@ const LessonRow = ({ lesson, moduleId, onRefresh, isNew, onCancelNew }) => {
         onKeyDown={e => e.key === 'Enter' && save()}
       />
 
-      {/* Source dropdown */}
-      <select className="form-select form-select-sm flex-shrink-0" style={{ width: 140 }}
-        value={source} onChange={e => setSource(e.target.value)}>
-        <option value="youtube">🎬 YouTube</option>
-        <option value="bunny">🐰 Bunny Stream</option>
-      </select>
-
-      {/* URL input */}
+      {/* URL input — source auto-detected from URL (YouTube/Bunny/direct) */}
       <input
         type="text" className="form-control form-control-sm flex-grow-1"
-        placeholder={VIDEO_PLACEHOLDER[source] || 'Video URL'}
+        placeholder="Video URL (YouTube, Bunny Stream, or direct)"
         value={url} onChange={e => setUrl(e.target.value)}
       />
 
