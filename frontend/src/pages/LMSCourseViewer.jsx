@@ -183,10 +183,11 @@ const LMSCourseViewer = () => {
 
   const allLessons = data?.modules?.flatMap(m => m.lessons || []) || [];
 
-  // Fetch signed URL whenever the active lesson changes to a hosted video
+  // Fetch signed URL for any backend-hosted video (bunny: or legacy storage:)
   useEffect(() => {
     setSignedUrl(null);
-    if (!activeLesson?.video_url?.startsWith('storage:')) return;
+    const url = activeLesson?.video_url;
+    if (!url?.startsWith('bunny:') && !url?.startsWith('storage:')) return;
     lmsAPI.getLessonVideoUrl(activeLesson.id)
       .then(r => { if (r.success) setSignedUrl(r.data.url); })
       .catch(() => {});
@@ -304,17 +305,24 @@ const LMSCourseViewer = () => {
             <>
               {/* Video player with Up Next overlay */}
               <div style={{ background: '#000', aspectRatio: '16/9', maxHeight: '60vh', position: 'relative', flexShrink: 0 }}>
-                {activeLesson.video_url?.startsWith('storage:') && !signedUrl ? (
-                  <div className="d-flex align-items-center justify-content-center h-100">
-                    <div className="spinner-border" style={{ color: '#6366f1' }} />
-                  </div>
-                ) : (
-                  <VideoPlayer
-                    url={activeLesson.video_url?.startsWith('storage:') ? signedUrl : activeLesson.video_url}
-                    source={activeLesson.video_url?.startsWith('storage:') ? 'url' : undefined}
-                    title={activeLesson.title}
-                  />
-                )}
+                {(() => {
+                  const vUrl = activeLesson.video_url;
+                  const needsSigned = vUrl?.startsWith('bunny:') || vUrl?.startsWith('storage:');
+                  if (needsSigned && !signedUrl) return (
+                    <div className="d-flex align-items-center justify-content-center h-100">
+                      <div className="spinner-border" style={{ color: '#6366f1' }} />
+                    </div>
+                  );
+                  const playUrl  = needsSigned ? signedUrl : vUrl;
+                  const isBunny  = vUrl?.startsWith('bunny:');
+                  return (
+                    <VideoPlayer
+                      url={playUrl}
+                      source={isBunny ? 'bunny' : vUrl?.startsWith('storage:') ? 'url' : undefined}
+                      title={activeLesson.title}
+                    />
+                  );
+                })()}
                 <AnimatePresence>
 
                   {showUpNext && nextLesson && (

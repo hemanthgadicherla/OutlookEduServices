@@ -793,12 +793,46 @@ export const curriculumAPI = {
     });
     return r.json();
   },
-  getVideoUploadUrl: async (lessonId, filename) => {
+  getBunnyUploadToken: async (lessonId, { title, description } = {}) => {
     const token = localStorage.getItem('adminToken');
-    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/${lessonId}/upload-url`, {
+    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/${lessonId}/bunny-upload-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
-      body: JSON.stringify({ filename })
+      body: JSON.stringify({ title, description }),
+    });
+    return r.json();
+  },
+  listVideos: async () => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/videos`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+    });
+    return r.json();
+  },
+  setVideoUrl: async (lessonId, video_url) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/${lessonId}/video-url`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ video_url }),
+    });
+    return r.json();
+  },
+  reorderLessons: async (items) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ items })
+    });
+    return r.json();
+  },
+  reorderModules: async (items) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/modules/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ items })
     });
     return r.json();
   },

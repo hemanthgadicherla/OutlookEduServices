@@ -1,305 +1,24 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar';
-import { courseAPI, uploadAPI, curriculumAPI } from '../services/api';
+import { courseAPI, uploadAPI } from '../services/api';
 import { toast } from 'react-toastify';
-import {
-  FaPlus, FaEdit, FaTrash, FaTimes, FaBookOpen,
-  FaChevronDown, FaChevronRight,
-  FaLock, FaLockOpen, FaCheck, FaGripVertical,
-  FaUpload, FaVideo, FaTimesCircle
-} from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaTimes, FaBookOpen } from 'react-icons/fa';
 
 const EMPTY_COURSE = {
   title: '', slug: '', description: '', full_description: '',
   price: '', image: '', imageFile: null, preview: '',
-  category: '', is_published: true
+  category: '', is_published: true,
 };
 
 const CATEGORIES = ['Marketing', 'Finance', 'Language', 'Technology', 'Business', 'Design', 'Other'];
+const toSlug = (str) => str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
 
-const toSlug = (str) =>
-  str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+// ── Create Course Modal (basic details only) ─────────────────────
+const CreateCourseModal = ({ open, onClose, onCreated, loading }) => {
+  const [form, setForm] = useState(EMPTY_COURSE);
 
-// ── Inline lesson row — add / edit in one line ───────────────────
-const LessonRow = ({ lesson, moduleId, onRefresh, isNew, onCancelNew }) => {
-  const [title,      setTitle]      = useState(lesson?.title     || '');
-  const [url,        setUrl]        = useState(lesson?.video_url?.startsWith('storage:') ? '' : (lesson?.video_url || ''));
-  const [locked,     setLocked]     = useState(lesson ? !lesson.is_free : true);
-  const [saving,     setSaving]     = useState(false);
-  const [uploading,  setUploading]  = useState(false);
-  const [uploadPct,  setUploadPct]  = useState(0);
-  const fileRef = useRef(null);
-
-  const hasStorageVideo = lesson?.video_url?.startsWith('storage:');
-
-  const save = async () => {
-    if (!title.trim()) { toast.error('Lesson title is required'); return; }
-    setSaving(true);
-    const payload = {
-      title:     title.trim(),
-      video_url: hasStorageVideo ? lesson.video_url : (url.trim() || null),
-      is_free:   !locked,
-      content:   lesson?.content || null,
-    };
-    const res = lesson?.id
-      ? await curriculumAPI.updateLesson(lesson.id, payload)
-      : await curriculumAPI.createLesson(moduleId, payload);
-    setSaving(false);
-    if (res.success) {
-      toast.success(lesson?.id ? 'Lesson updated' : 'Lesson added');
-      if (isNew && onCancelNew) onCancelNew();
-      onRefresh();
-    } else toast.error(res.message || 'Failed to save lesson');
-  };
-
-  const del = async () => {
-    if (!lesson?.id) return;
-    if (!window.confirm('Delete this lesson?')) return;
-    const res = await curriculumAPI.deleteLesson(lesson.id);
-    if (res.success) { toast.success('Lesson deleted'); onRefresh(); }
-    else toast.error(res.message);
-  };
-
-  const toggleLock = async () => {
-    const next = !locked;
-    setLocked(next);
-    if (lesson?.id) {
-      await curriculumAPI.updateLesson(lesson.id, { is_free: !next });
-      onRefresh();
-    }
-  };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !lesson?.id) return;
-
-    setUploading(true);
-    setUploadPct(0);
-
-    try {
-      // 1. Get signed upload URL from backend
-      const res = await curriculumAPI.getVideoUploadUrl(lesson.id, file.name);
-      if (!res.success) { toast.error(res.message || 'Failed to get upload URL'); setUploading(false); return; }
-
-      // 2. Upload directly to Supabase Storage via XHR for progress tracking
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', res.data.signedUrl);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) setUploadPct(Math.round((e.loaded / e.total) * 100));
-        };
-        xhr.onload  = () => xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`));
-        xhr.onerror = () => reject(new Error('Upload network error'));
-        xhr.send(file);
-      });
-
-      toast.success('Video uploaded successfully!');
-      onRefresh();
-    } catch (err) {
-      toast.error(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-      setUploadPct(0);
-      if (fileRef.current) fileRef.current.value = '';
-    }
-  };
-
-  const removeVideo = async () => {
-    if (!lesson?.id || !window.confirm('Remove this video?')) return;
-    const res = await curriculumAPI.deleteVideo(lesson.id);
-    if (res.success) { toast.success('Video removed'); onRefresh(); }
-    else toast.error(res.message);
-  };
-
-  return (
-    <div className="mb-1">
-      <div className="d-flex align-items-center gap-2 py-2 px-2 rounded-2"
-        style={{ background: isNew ? '#f0f7ff' : '#f8fafc', border: `1px solid ${isNew ? '#bfdbfe' : '#e9ecef'}` }}>
-
-        {/* Drag handle */}
-        {!isNew && <FaGripVertical className="text-muted flex-shrink-0" style={{ cursor: 'grab', fontSize: 11 }} />}
-
-        {/* Lesson title */}
-        <input
-          type="text" className="form-control form-control-sm"
-          style={{ minWidth: 120, maxWidth: 200 }}
-          placeholder="Lesson name"
-          value={title} onChange={e => setTitle(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && save()}
-        />
-
-        {/* Video: hosted indicator OR URL input */}
-        {hasStorageVideo ? (
-          <div className="d-flex align-items-center gap-1 flex-grow-1 px-2 rounded-2"
-            style={{ background: '#d1fae5', border: '1px solid #6ee7b7', fontSize: 12 }}>
-            <FaVideo size={11} style={{ color: '#059669' }} />
-            <span style={{ color: '#065f46' }} className="flex-grow-1">Hosted video</span>
-            <button type="button" onClick={removeVideo}
-              style={{ background: 'none', border: 'none', color: '#dc2626', padding: 0, cursor: 'pointer' }}>
-              <FaTimesCircle size={13} />
-            </button>
-          </div>
-        ) : (
-          <input
-            type="text" className="form-control form-control-sm flex-grow-1"
-            placeholder="YouTube / Bunny URL  — or upload below"
-            value={url} onChange={e => setUrl(e.target.value)}
-          />
-        )}
-
-        {/* Upload file (only for saved lessons) */}
-        {lesson?.id && !hasStorageVideo && (
-          <>
-            <input type="file" ref={fileRef} accept="video/*" style={{ display: 'none' }}
-              onChange={handleFileUpload} />
-            <button type="button"
-              className="btn btn-sm btn-outline-secondary flex-shrink-0 d-flex align-items-center gap-1"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              style={{ fontSize: 12, whiteSpace: 'nowrap' }}
-              title="Upload video to Supabase (private, 2-hr signed URLs)">
-              <FaUpload size={11} /> {uploading ? `${uploadPct}%` : 'Upload'}
-            </button>
-          </>
-        )}
-
-        {/* Lock / Unlock */}
-        <button type="button"
-          className={`btn btn-sm flex-shrink-0 d-flex align-items-center gap-1 ${locked ? 'btn-danger' : 'btn-success'}`}
-          style={{ fontSize: 12, whiteSpace: 'nowrap' }}
-          onClick={toggleLock}>
-          {locked ? <><FaLock size={11} /> Locked</> : <><FaLockOpen size={11} /> Free</>}
-        </button>
-
-        {/* Save */}
-        <button type="button"
-          className="btn btn-primary btn-sm flex-shrink-0 d-flex align-items-center gap-1"
-          onClick={save} disabled={saving} style={{ fontSize: 12 }}>
-          {saving ? <span className="spinner-border spinner-border-sm" /> : <><FaCheck size={11} /> Save</>}
-        </button>
-
-        {/* Delete / Cancel */}
-        {isNew
-          ? <button type="button" className="btn btn-sm btn-outline-secondary flex-shrink-0"
-              onClick={onCancelNew}><FaTimes size={11} /></button>
-          : <button type="button" className="btn btn-sm btn-outline-danger flex-shrink-0"
-              onClick={del}><FaTrash size={11} /></button>
-        }
-      </div>
-
-      {/* Upload progress bar */}
-      {uploading && (
-        <div style={{ height: 4, background: '#e5e7eb', borderRadius: 99, marginTop: 3 }}>
-          <div style={{ height: '100%', width: `${uploadPct}%`, background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: 99, transition: 'width 0.2s' }} />
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ── Chapter block ────────────────────────────────────────────────
-const ChapterBlock = ({ module, courseId, onRefresh }) => {
-  const [expanded,     setExpanded]     = useState(true);
-  const [addingLesson, setAddingLesson] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleVal,     setTitleVal]     = useState(module.title);
-
-  const saveTitle = async () => {
-    if (!titleVal.trim()) return;
-    await curriculumAPI.updateModule(module.id, { title: titleVal.trim() });
-    setEditingTitle(false);
-    onRefresh();
-  };
-
-  const deleteChapter = async () => {
-    if (!window.confirm(`Delete chapter "${module.title}" and all its lessons?`)) return;
-    const res = await curriculumAPI.deleteModule(module.id);
-    if (res.success) { toast.success('Chapter deleted'); onRefresh(); }
-    else toast.error(res.message);
-  };
-
-  const lessons = module.course_lessons || [];
-
-  return (
-    <div className="rounded-3 mb-3" style={{ border: '1px solid #e2e8f0', background: '#fff' }}>
-      {/* Chapter header */}
-      <div className="d-flex align-items-center gap-2 p-3"
-        style={{ borderBottom: expanded ? '1px solid #f1f5f9' : 'none', background: '#f8fafc', borderRadius: expanded ? '12px 12px 0 0' : 12 }}>
-        <FaGripVertical className="text-muted" style={{ cursor: 'grab', flexShrink: 0 }} />
-        <button type="button" className="btn btn-sm btn-light p-1 flex-shrink-0"
-          onClick={() => setExpanded(e => !e)}>
-          {expanded ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />}
-        </button>
-
-        {editingTitle ? (
-          <input autoFocus className="form-control form-control-sm flex-grow-1"
-            value={titleVal} onChange={e => setTitleVal(e.target.value)}
-            onBlur={saveTitle} onKeyDown={e => e.key === 'Enter' && saveTitle()} />
-        ) : (
-          <span className="fw-semibold flex-grow-1" style={{ fontSize: 14 }}>{module.title}</span>
-        )}
-
-        <span className="text-muted small flex-shrink-0">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</span>
-
-        <button type="button" className="btn btn-sm btn-light p-1 flex-shrink-0"
-          onClick={() => setEditingTitle(e => !e)} title="Rename chapter">
-          <FaEdit size={12} style={{ color: '#0d6efd' }} />
-        </button>
-        <button type="button" className="btn btn-sm btn-light p-1 flex-shrink-0"
-          onClick={deleteChapter} title="Delete chapter">
-          <FaTrash size={12} style={{ color: '#dc3545' }} />
-        </button>
-      </div>
-
-      {/* Lessons */}
-      {expanded && (
-        <div className="p-3">
-          {/* Existing lessons */}
-          {lessons.map(lesson => (
-            <LessonRow key={lesson.id} lesson={lesson} moduleId={module.id} onRefresh={onRefresh} />
-          ))}
-
-          {/* New lesson row */}
-          {addingLesson && (
-            <LessonRow isNew moduleId={module.id} onRefresh={onRefresh}
-              onCancelNew={() => setAddingLesson(false)} />
-          )}
-
-          {/* Add lesson button */}
-          {!addingLesson && (
-            <button type="button"
-              className="btn btn-sm btn-outline-primary mt-1 d-flex align-items-center gap-1"
-              onClick={() => setAddingLesson(true)}>
-              <FaPlus size={10} /> Add Lesson
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ── Course Modal ─────────────────────────────────────────────────
-const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
-  const [form,    setForm]    = useState(EMPTY_COURSE);
-  const [modules, setModules] = useState([]);
-  const [newChap, setNewChap] = useState('');
-  const [addingChap, setAddingChap] = useState(false);
-
-  const fetchModules = useCallback(async (id) => {
-    if (!id) return;
-    const res = await curriculumAPI.getModules(id);
-    if (res.success) setModules(res.data || []);
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      setForm(initial || EMPTY_COURSE);
-      setModules([]);
-      if (initial?.id) fetchModules(initial.id);
-    }
-  }, [open, initial, fetchModules]);
+  useEffect(() => { if (open) setForm(EMPTY_COURSE); }, [open]);
 
   if (!open) return null;
 
@@ -308,7 +27,7 @@ const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
   const handleTitleChange = (e) => {
     const t = e.target.value;
     set('title', t);
-    if (!initial?.id) set('slug', toSlug(t));
+    set('slug', toSlug(t));
   };
 
   const handleImage = (e) => {
@@ -318,19 +37,6 @@ const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
     set('preview', URL.createObjectURL(file));
   };
 
-  const addChapter = async () => {
-    if (!newChap.trim()) return;
-    if (!initial?.id) { toast.info('Save the course first, then add chapters'); return; }
-    const res = await curriculumAPI.createModule(initial.id, { title: newChap.trim() });
-    if (res.success) {
-      toast.success('Chapter added');
-      setNewChap(''); setAddingChap(false);
-      fetchModules(initial.id);
-    } else toast.error(res.message);
-  };
-
-  const isEdit = !!initial?.id;
-
   return (
     <>
       <div onClick={onClose}
@@ -338,137 +44,91 @@ const CourseModal = ({ open, onClose, onSave, initial, loading }) => {
       <div style={{
         position: 'fixed', top: '50%', left: '50%',
         transform: 'translate(-50%,-50%)',
-        width: '95%', maxWidth: 760,
-        maxHeight: '92vh', overflowY: 'auto',
+        width: '95%', maxWidth: 640,
+        maxHeight: '90vh', overflowY: 'auto',
         background: '#fff', borderRadius: 16,
         boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
-        zIndex: 1050, padding: '28px 32px'
+        zIndex: 1050, padding: '28px 32px',
       }}>
-        {/* Header */}
         <div className="d-flex align-items-center justify-content-between mb-4">
           <div className="d-flex align-items-center gap-2">
             <FaBookOpen style={{ color: '#0d6efd' }} />
-            <h5 className="fw-bold mb-0">{isEdit ? 'Edit Course' : 'Create New Course'}</h5>
+            <h5 className="fw-bold mb-0">Create New Course</h5>
           </div>
-          <button onClick={onClose} className="btn btn-sm btn-light rounded-circle p-1"><FaTimes /></button>
+          <button onClick={onClose} className="btn btn-sm btn-light rounded-circle p-1">
+            <FaTimes />
+          </button>
         </div>
 
-        <form onSubmit={e => { e.preventDefault(); onSave(form); }}>
-          {/* Section 1 — Course Details */}
-          <div className="p-3 rounded-3 mb-4" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <div className="fw-semibold text-uppercase small text-muted mb-3" style={{ letterSpacing: 1 }}>
-              1. Course Details
-            </div>
-            <div className="row g-3">
-              <div className="col-md-6">
-                <label className="form-label fw-semibold small">Course Title *</label>
-                <input type="text" className="form-control" placeholder="e.g. Digital Marketing Mastery"
-                  value={form.title} onChange={handleTitleChange} required />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label fw-semibold small">URL Slug *</label>
-                <input type="text" className="form-control" placeholder="e.g. digital-marketing-mastery"
-                  value={form.slug} onChange={e => set('slug', e.target.value)} required />
-              </div>
-              <div className="col-12">
-                <label className="form-label fw-semibold small">Short Description *</label>
-                <textarea className="form-control" rows="2"
-                  placeholder="Brief summary shown on course cards"
-                  value={form.description} onChange={e => set('description', e.target.value)} required />
-              </div>
-              <div className="col-12">
-                <label className="form-label fw-semibold small">Full Description</label>
-                <textarea className="form-control" rows="3"
-                  placeholder="Detailed course content..."
-                  value={form.full_description} onChange={e => set('full_description', e.target.value)} />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label fw-semibold small">Price (₹) *</label>
-                <input type="number" className="form-control" placeholder="e.g. 25000"
-                  value={form.price} onChange={e => set('price', e.target.value)} required min="0" />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label fw-semibold small">Category *</label>
-                <select className="form-select" value={form.category}
-                  onChange={e => set('category', e.target.value)} required>
-                  <option value="">Select category...</option>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="col-12">
-                <label className="form-label fw-semibold small">Thumbnail Image</label>
-                <input type="file" className="form-control" accept="image/*" onChange={handleImage} />
-                {form.preview && (
-                  <img src={form.preview} alt="Preview" className="mt-2 rounded"
-                    style={{ height: 100, objectFit: 'cover', borderRadius: 8 }}
-                    onError={e => { e.target.style.display = 'none'; }} />
-                )}
-              </div>
-            </div>
-          </div>
+        <p className="text-muted small mb-4">
+          Fill in the basics and save — you'll be taken to the course editor to add chapters and videos.
+        </p>
 
-          {/* Section 2 — Curriculum */}
-          <div className="p-3 rounded-3 mb-4" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <div className="fw-semibold text-uppercase small text-muted" style={{ letterSpacing: 1 }}>
-                2. Curriculum (Chapters &amp; Lessons)
-              </div>
-              {isEdit && (
-                <button type="button" className="btn btn-sm btn-dark d-flex align-items-center gap-1"
-                  onClick={() => setAddingChap(true)}>
-                  <FaPlus size={11} /> Add Chapter
-                </button>
+        <form onSubmit={e => { e.preventDefault(); onCreated(form); }}>
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label fw-semibold small">Course Title *</label>
+              <input type="text" className="form-control"
+                placeholder="e.g. Digital Marketing Mastery"
+                value={form.title} onChange={handleTitleChange} required />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label fw-semibold small">URL Slug *</label>
+              <input type="text" className="form-control"
+                placeholder="e.g. digital-marketing-mastery"
+                value={form.slug} onChange={e => set('slug', e.target.value)} required />
+            </div>
+            <div className="col-12">
+              <label className="form-label fw-semibold small">Short Description *</label>
+              <textarea className="form-control" rows={2}
+                placeholder="Brief summary shown on course cards"
+                value={form.description} onChange={e => set('description', e.target.value)} required />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label fw-semibold small">Price (₹) *</label>
+              <input type="number" className="form-control" placeholder="e.g. 25000"
+                value={form.price} onChange={e => set('price', e.target.value)} required min="0" />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label fw-semibold small">Category *</label>
+              <select className="form-select" value={form.category}
+                onChange={e => set('category', e.target.value)} required>
+                <option value="">Select category...</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="col-12">
+              <label className="form-label fw-semibold small">Thumbnail Image</label>
+              <input type="file" className="form-control" accept="image/*" onChange={handleImage} />
+              {form.preview && (
+                <img src={form.preview} alt="Preview" className="mt-2 rounded"
+                  style={{ height: 80, objectFit: 'cover', borderRadius: 8 }}
+                  onError={e => { e.target.style.display = 'none'; }} />
               )}
             </div>
-
-            {!isEdit && (
-              <div className="text-center py-3 rounded-3" style={{ border: '1px dashed #cbd5e1', color: '#94a3b8', fontSize: 14 }}>
-                Save the course first to add chapters and lessons.
+            <div className="col-12">
+              <div className="d-flex align-items-center gap-2">
+                <input type="checkbox" className="form-check-input" id="pub_check"
+                  checked={form.is_published} onChange={e => set('is_published', e.target.checked)}
+                  style={{ width: 20, height: 20, cursor: 'pointer' }} />
+                <label htmlFor="pub_check" className="fw-semibold small" style={{ cursor: 'pointer' }}>
+                  Publish immediately
+                </label>
+                <span className="text-muted small ms-1">
+                  {form.is_published ? '(Visible to students)' : '(Coming Soon)'}
+                </span>
               </div>
-            )}
-
-            {isEdit && modules.length === 0 && !addingChap && (
-              <div className="text-center py-3 rounded-3" style={{ border: '1px dashed #cbd5e1', color: '#94a3b8', fontSize: 14 }}>
-                No chapters added. Build your curriculum here!
-              </div>
-            )}
-
-            {isEdit && modules.map(mod => (
-              <ChapterBlock key={mod.id} module={mod} courseId={initial.id}
-                onRefresh={() => fetchModules(initial.id)} />
-            ))}
-
-            {addingChap && (
-              <div className="d-flex gap-2 mt-2">
-                <input autoFocus type="text" className="form-control form-control-sm"
-                  placeholder="Chapter title..." value={newChap}
-                  onChange={e => setNewChap(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChapter())} />
-                <button type="button" className="btn btn-primary btn-sm" onClick={addChapter}>Add</button>
-                <button type="button" className="btn btn-outline-secondary btn-sm"
-                  onClick={() => { setAddingChap(false); setNewChap(''); }}>Cancel</button>
-              </div>
-            )}
+            </div>
           </div>
 
-          {/* Publish toggle */}
-          <div className="d-flex align-items-center gap-2 mb-4">
-            <input type="checkbox" className="form-check-input" id="pub_check"
-              checked={form.is_published} onChange={e => set('is_published', e.target.checked)}
-              style={{ width: 20, height: 20, cursor: 'pointer' }} />
-            <label htmlFor="pub_check" className="fw-semibold" style={{ cursor: 'pointer' }}>
-              Publish immediately
-            </label>
-            <span className="text-muted small ms-1">
-              {form.is_published ? '(Active — visible to students)' : '(Upcoming — shown as Coming Soon)'}
-            </span>
-          </div>
-
-          <div className="d-flex justify-content-end gap-2">
-            <button type="button" className="btn btn-outline-secondary px-4" onClick={onClose}>Cancel</button>
+          <div className="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" className="btn btn-outline-secondary px-4" onClick={onClose}>
+              Cancel
+            </button>
             <button type="submit" className="btn btn-primary px-4" disabled={loading}>
-              {loading ? <><span className="spinner-border spinner-border-sm me-2" />Saving...</>
-                : isEdit ? 'Update Course' : 'Save Course'}
+              {loading
+                ? <><span className="spinner-border spinner-border-sm me-2" />Creating...</>
+                : 'Create & Open Editor →'}
             </button>
           </div>
         </form>
@@ -517,9 +177,9 @@ const CourseRow = ({ course, onEdit, onDelete, onToggle }) => (
           style={{ cursor: 'pointer' }}
           title={course.is_published ? 'Set as Upcoming' : 'Set as Active'} />
       </div>
-      <button className="btn btn-sm btn-light rounded-circle" style={{ width: 34, height: 34 }}
-        onClick={() => onEdit(course)} title="Edit">
-        <FaEdit style={{ color: '#0d6efd' }} />
+      <button className="btn btn-sm btn-light d-flex align-items-center gap-1 px-3"
+        style={{ fontSize: 13 }} onClick={() => onEdit(course)}>
+        <FaEdit style={{ color: '#0d6efd' }} size={13} /> Edit
       </button>
       <button className="btn btn-sm btn-light rounded-circle" style={{ width: 34, height: 34 }}
         onClick={() => onDelete(course.id)} title="Delete">
@@ -531,9 +191,9 @@ const CourseRow = ({ course, onEdit, onDelete, onToggle }) => (
 
 // ── Main Page ────────────────────────────────────────────────────
 const AdminCourses = () => {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [modal,   setModal]   = useState(false);
-  const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => { fetchCourses(); }, []);
@@ -545,21 +205,10 @@ const AdminCourses = () => {
     } catch (e) { console.error(e); }
   };
 
-  const openCreate = () => { setEditing(null); setModal(true); };
-  const openEdit   = (c)  => { setEditing(toForm(c)); setModal(true); };
-  const closeModal = ()   => { setModal(false); setEditing(null); };
-
-  const toForm = (c) => ({
-    id: c.id, title: c.title || '', slug: c.slug || '',
-    description: c.description || '', full_description: c.full_description || '',
-    price: c.price ?? '', image: c.image || '', imageFile: null,
-    preview: c.image || '', category: c.category || '', is_published: !!c.is_published
-  });
-
-  const handleSave = async (form) => {
+  const handleCreate = async (form) => {
     setLoading(true);
     try {
-      let imageUrl = form.image || form.preview || '';
+      let imageUrl = '';
       if (form.imageFile) {
         const up = await uploadAPI.uploadImage(form.imageFile);
         if (up.success) imageUrl = up.imageUrl;
@@ -569,17 +218,16 @@ const AdminCourses = () => {
         title: form.title, slug: form.slug,
         description: form.description, full_description: form.full_description,
         price: form.price, image: imageUrl,
-        category: form.category, is_published: form.is_published
+        category: form.category, is_published: form.is_published,
       };
-      const res = form.id
-        ? await courseAPI.updateCourse(form.id, payload)
-        : await courseAPI.createCourse(payload);
+      const res = await courseAPI.createCourse(payload);
       if (res.success) {
-        toast.success(form.id ? 'Course updated' : 'Course created');
-        closeModal(); fetchCourses();
+        toast.success('Course created — opening editor');
+        setModal(false);
+        navigate(`/admin/courses/${res.data.id}`, { state: { course: res.data } });
       } else toast.error(res.message || 'Something went wrong');
     } catch (err) {
-      console.error(err); toast.error('Something went wrong');
+      toast.error('Something went wrong');
     } finally { setLoading(false); }
   };
 
@@ -609,18 +257,17 @@ const AdminCourses = () => {
       <div className="flex-grow-1 p-4 bg-light" style={{ minHeight: '100vh' }}>
         <div className="d-flex align-items-center justify-content-between mb-4">
           <h1 className="fw-bold mb-0">Courses</h1>
-          <button className="btn btn-primary d-flex align-items-center gap-2" onClick={openCreate}>
+          <button className="btn btn-primary d-flex align-items-center gap-2" onClick={() => setModal(true)}>
             <FaPlus size={13} /> Create Course
           </button>
         </div>
 
         {courses.length === 0 ? (
-          <div className="text-center py-5 rounded-3"
-            style={{ background: '#fff', border: '1px dashed #dee2e6' }}>
+          <div className="text-center py-5 rounded-3" style={{ background: '#fff', border: '1px dashed #dee2e6' }}>
             <FaBookOpen size={40} className="text-muted mb-3" />
             <p className="fw-semibold text-muted mb-1">No courses yet</p>
             <p className="text-muted small mb-3">Create your first course to get started</p>
-            <button className="btn btn-primary btn-sm" onClick={openCreate}>
+            <button className="btn btn-primary btn-sm" onClick={() => setModal(true)}>
               <FaPlus className="me-1" /> Create Course
             </button>
           </div>
@@ -634,7 +281,9 @@ const AdminCourses = () => {
                 </div>
                 {active.map(c => (
                   <CourseRow key={c.id} course={c}
-                    onEdit={openEdit} onDelete={handleDelete} onToggle={handleToggle} />
+                    onEdit={c => navigate(`/admin/courses/${c.id}`, { state: { course: c } })}
+                    onDelete={handleDelete}
+                    onToggle={handleToggle} />
                 ))}
               </div>
             )}
@@ -646,7 +295,9 @@ const AdminCourses = () => {
                 </div>
                 {upcoming.map(c => (
                   <CourseRow key={c.id} course={c}
-                    onEdit={openEdit} onDelete={handleDelete} onToggle={handleToggle} />
+                    onEdit={c => navigate(`/admin/courses/${c.id}`, { state: { course: c } })}
+                    onDelete={handleDelete}
+                    onToggle={handleToggle} />
                 ))}
               </div>
             )}
@@ -654,8 +305,8 @@ const AdminCourses = () => {
         )}
       </div>
 
-      <CourseModal open={modal} onClose={closeModal} onSave={handleSave}
-        initial={editing} loading={loading} />
+      <CreateCourseModal open={modal} onClose={() => setModal(false)}
+        onCreated={handleCreate} loading={loading} />
     </div>
   );
 };

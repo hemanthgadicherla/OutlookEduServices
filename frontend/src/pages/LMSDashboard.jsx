@@ -235,9 +235,9 @@ const LMSDashboard = () => {
               alt="Outlook" style={{ height: 44, objectFit: 'contain' }} />
           </Link>
           <div className="d-flex gap-3">
-            {['/', '/courses', '/contact', '/account'].map((p, i) => (
+            {['/', '/courses', '/contact', '/lms/profile'].map((p, i) => (
               <Link key={p} to={p} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, textDecoration: 'none' }}>
-                {['Home','Courses','Contact','Account'][i]}
+                {['Home','Courses','Contact','Profile'][i]}
               </Link>
             ))}
           </div>

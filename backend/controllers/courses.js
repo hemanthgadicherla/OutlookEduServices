@@ -65,15 +65,18 @@ const updateCourse = async (req, res) => {
       return res.status(400).json({ success: false, message: validationError.details[0].message });
     }
 
-    const { title, description, fullDescription, price, image, is_published } = req.body;
+    const { title, slug, description, fullDescription, full_description, price, image, category, is_published } = req.body;
 
     const updates = {};
-    if (title            !== undefined) updates.title            = title;
-    if (description      !== undefined) updates.description      = description;
-    if (fullDescription  !== undefined) updates.full_description = fullDescription;
-    if (price            !== undefined) updates.price            = parseFloat(price);
-    if (image            !== undefined) updates.image            = image;
-    if (is_published     !== undefined) updates.is_published     = is_published;
+    if (title                                    !== undefined) updates.title            = title;
+    if (slug                                     !== undefined) updates.slug             = slug;
+    if (description                              !== undefined) updates.description      = description;
+    if (fullDescription                          !== undefined) updates.full_description = fullDescription;
+    if (full_description                         !== undefined) updates.full_description = full_description;
+    if (price                                    !== undefined) updates.price            = parseFloat(price);
+    if (image                                    !== undefined) updates.image            = image;
+    if (category                                 !== undefined) updates.category         = category;
+    if (is_published                             !== undefined) updates.is_published     = is_published;
 
     const { data, error } = await supabase
       .from('courses')

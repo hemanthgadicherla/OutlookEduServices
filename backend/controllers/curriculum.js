@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { createBunnyVideo, getBunnyTusCredentials, deleteBunnyVideo } = require('../utils/bunny');
 
 // ─────────────────────────────────────────────────────────────
 // MODULES (Chapters)
@@ -193,45 +194,42 @@ const deleteLesson = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// POST /api/curriculum/lessons/:id/upload-url
-// Admin: returns a signed upload URL so the browser uploads
-// the video file directly to Supabase Storage (no server proxy).
-// Stores the storage path in video_url after URL generation.
+// POST /api/curriculum/lessons/:id/bunny-upload-token
+// Admin: creates a Bunny Stream video object and returns TUS
+// credentials so the browser can upload directly to Bunny CDN
+// without ever seeing the raw API key.
 // ─────────────────────────────────────────────────────────────
-const getVideoUploadUrl = async (req, res) => {
+const getBunnyUploadToken = async (req, res) => {
   try {
-    const { id }      = req.params;
-    const { filename } = req.body;
+    const { id } = req.params;
+    const { title: videoTitle, description: videoDescription } = req.body || {};
 
-    if (!filename) return res.status(400).json({ success: false, message: 'filename required' });
+    const { data: lesson } = await supabase
+      .from('course_lessons').select('id, title').eq('id', id).maybeSingle();
+    if (!lesson) return res.status(404).json({ success: false, message: 'Lesson not found' });
 
-    const ext      = filename.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
-    const safeName = `${Date.now()}.${ext || 'mp4'}`;
-    const path     = `lessons/${id}/${safeName}`;
+    // Create the video object in Bunny Stream (gets a stable videoId / guid)
+    const video = await createBunnyVideo(videoTitle || lesson.title, videoDescription || '');
+    const videoId = video.guid;
 
-    const { data, error } = await supabase.storage
-      .from('course-videos')
-      .createSignedUploadUrl(path);
+    // Generate time-limited TUS signature (no raw API key sent to client)
+    const creds = getBunnyTusCredentials(videoId);
 
-    if (error) {
-      console.error('upload-url error:', error.message);
-      return res.status(500).json({ success: false, message: error.message });
-    }
-
-    // Pre-save the storage path so lesson knows where its video will live
+    // Record the Bunny video ID in DB immediately so it's tracked
     await supabase.from('course_lessons')
-      .update({ video_url: `storage:${path}` })
+      .update({ video_url: `bunny:${videoId}` })
       .eq('id', id);
 
-    return res.json({ success: true, data: { signedUrl: data.signedUrl, token: data.token, path } });
+    return res.json({ success: true, data: creds });
   } catch (err) {
-    console.error('getVideoUploadUrl error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to generate upload URL' });
+    console.error('getBunnyUploadToken error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to create Bunny video' });
   }
 };
 
 // DELETE /api/curriculum/lessons/:id/video
-// Admin: removes video from storage and clears video_url
+// Admin: removes the video from Bunny Stream (or Supabase) and clears video_url.
+// Won't delete from Bunny if another lesson still references the same videoId.
 const deleteVideo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -239,7 +237,18 @@ const deleteVideo = async (req, res) => {
     const { data: lesson } = await supabase
       .from('course_lessons').select('video_url').eq('id', id).maybeSingle();
 
-    if (lesson?.video_url?.startsWith('storage:')) {
+    if (lesson?.video_url?.startsWith('bunny:')) {
+      const videoId = lesson.video_url.replace('bunny:', '');
+      // Only delete from Bunny if no other lesson shares this video
+      const { count } = await supabase
+        .from('course_lessons')
+        .select('id', { count: 'exact', head: true })
+        .eq('video_url', lesson.video_url)
+        .neq('id', id);
+      if ((count || 0) === 0) {
+        await deleteBunnyVideo(videoId).catch(e => console.warn('Bunny delete warning:', e.message));
+      }
+    } else if (lesson?.video_url?.startsWith('storage:')) {
       const path = lesson.video_url.replace('storage:', '');
       await supabase.storage.from('course-videos').remove([path]);
     }
@@ -252,14 +261,102 @@ const deleteVideo = async (req, res) => {
   }
 };
 
+// GET /api/curriculum/videos
+// Admin: returns all lessons that have a video, with course + module context (for library picker)
+const listVideos = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('course_lessons')
+      .select(`
+        id, title, video_url,
+        course_modules ( id, title, courses ( id, title ) )
+      `)
+      .not('video_url', 'is', null)
+      .order('id', { ascending: false });
+
+    if (error) throw error;
+    return res.json({ success: true, data: data || [] });
+  } catch (err) {
+    console.error('listVideos error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to list videos' });
+  }
+};
+
+// PUT /api/curriculum/lessons/:id/video-url
+// Admin: directly set a lesson's video_url (for URL input or library reuse)
+const setVideoUrl = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { video_url } = req.body;
+    if (!video_url?.trim()) return res.status(400).json({ success: false, message: 'video_url is required' });
+
+    const { data, error } = await supabase
+      .from('course_lessons')
+      .update({ video_url: video_url.trim() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error('setVideoUrl error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to set video URL' });
+  }
+};
+
+// PUT /api/curriculum/lessons/reorder
+// Admin: batch-update lesson positions within a module
+const reorderLessons = async (req, res) => {
+  try {
+    const { items } = req.body; // [{ id, position }]
+    if (!Array.isArray(items) || items.length === 0)
+      return res.status(400).json({ success: false, message: 'items array required' });
+
+    await Promise.all(
+      items.map(({ id, position }) =>
+        supabase.from('course_lessons').update({ position }).eq('id', id)
+      )
+    );
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('reorderLessons error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to reorder lessons' });
+  }
+};
+
+// PUT /api/curriculum/modules/reorder
+// Admin: batch-update module positions within a course
+const reorderModules = async (req, res) => {
+  try {
+    const { items } = req.body; // [{ id, position }]
+    if (!Array.isArray(items) || items.length === 0)
+      return res.status(400).json({ success: false, message: 'items array required' });
+
+    await Promise.all(
+      items.map(({ id, position }) =>
+        supabase.from('course_modules').update({ position }).eq('id', id)
+      )
+    );
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('reorderModules error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to reorder modules' });
+  }
+};
+
 module.exports = {
   getModules,
   createModule,
   updateModule,
   deleteModule,
+  reorderModules,
   createLesson,
   updateLesson,
   deleteLesson,
-  getVideoUploadUrl,
-  deleteVideo
+  reorderLessons,
+  getBunnyUploadToken,
+  deleteVideo,
+  listVideos,
+  setVideoUrl,
 };

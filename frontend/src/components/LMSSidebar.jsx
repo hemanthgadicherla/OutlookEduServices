@@ -14,7 +14,7 @@ const NAV = [
   { name: 'Exams',         path: '/lms/exams',          icon: FaClipboardList },
   { name: 'Certificates',  path: '/lms/certificates',   icon: FaCertificate },
   { name: 'Notifications', path: '/lms/notifications',  icon: FaBell },
-  { name: 'Profile',       path: '/account',            icon: FaUser },
+  { name: 'Profile',       path: '/lms/profile',        icon: FaUser },
   { name: 'Settings',      path: '/lms/settings',       icon: FaCog },
 ];
 
