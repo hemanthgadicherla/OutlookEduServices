@@ -40,7 +40,7 @@ function getBunnyTusCredentials(videoId) {
 }
 
 // ── Generate a time-limited signed embed URL for a Bunny video ───
-function getBunnySignedEmbedUrl(videoId, expirySeconds = 7200) {
+function getBunnySignedEmbedUrl(videoId, expirySeconds = 28800) {
   const { libraryId, securityKey } = cfg();
   if (!libraryId || !securityKey) throw new Error('Bunny security key not configured');
 

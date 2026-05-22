@@ -394,19 +394,19 @@ const getLessonVideoUrl = async (req, res) => {
     // ── Bunny Stream: return a signed embed URL (token auth) ──
     if (hasBunny) {
       const videoId = lesson.video_url.replace('bunny:', '');
-      const { url, expires } = getBunnySignedEmbedUrl(videoId, 7200);
-      return res.json({ success: true, data: { url, type: 'bunny', expires_in: 7200 } });
+      const { url, expires } = getBunnySignedEmbedUrl(videoId, 3600);
+      return res.json({ success: true, data: { url, type: 'bunny', expires_in: 3600 } });
     }
 
-    // ── Legacy Supabase Storage: 2-hour signed download URL ──
+    // ── Legacy Supabase Storage: 1-hour signed download URL ──
     const path = lesson.video_url.replace('storage:', '');
     const { data, error } = await supabase.storage
       .from('course-videos')
-      .createSignedUrl(path, 7200);
+      .createSignedUrl(path, 3600);
 
     if (error) return res.status(500).json({ success: false, message: 'Could not generate stream URL' });
 
-    return res.json({ success: true, data: { url: data.signedUrl, type: 'storage', expires_in: 7200 } });
+    return res.json({ success: true, data: { url: data.signedUrl, type: 'storage', expires_in: 3600 } });
   } catch (err) {
     console.error('getLessonVideoUrl error:', err);
     return res.status(500).json({ success: false, message: 'Failed to get video URL' });

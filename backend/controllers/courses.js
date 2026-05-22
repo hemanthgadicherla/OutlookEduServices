@@ -28,16 +28,18 @@ const createCourse = async (req, res) => {
       return res.status(400).json({ success: false, message: validationError.details[0].message });
     }
 
-    const { title, description, fullDescription, price, image, is_published } = req.body;
+    const { title, slug, description, fullDescription, full_description, price, image, category, is_published } = req.body;
 
     const { data, error } = await supabase
       .from('courses')
       .insert([{
         title,
+        slug:             slug || '',
         description,
-        full_description: fullDescription || '',
+        full_description: full_description || fullDescription || '',
         price:            parseFloat(price),
         image:            image || '',
+        category:         category || '',
         is_published:     is_published !== undefined ? is_published : true,
         created_at:       new Date().toISOString()
       }])
