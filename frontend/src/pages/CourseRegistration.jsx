@@ -212,7 +212,7 @@ const CourseRegistration = () => {
     script.async = true;
     script.onerror = () => toast.error('Failed to load payment gateway. Please refresh.');
     document.body.appendChild(script);
-    return () => { if (script.parentNode) script.parentNode.removeChild(script); };
+    // No cleanup — keep the script loaded for the session
   }, []);
 
   // ── load courses ─────────────────────────────────────────────
@@ -309,6 +309,11 @@ const CourseRegistration = () => {
       const course     = selectedCourse || courses.find(c => c.title === data.selected_course);
       const courseName = course?.title || data.selected_course;
 
+      if (!courseName) {
+        toast.error('Please select a course to continue.');
+        return;
+      }
+
       // Step 1: Create or retrieve registration
       const regRes = await registrationAPI.createRegistration({
         full_name:       data.full_name,
@@ -335,7 +340,13 @@ const CourseRegistration = () => {
         return;
       }
 
-      // Step 3: Open Razorpay checkout
+      // Step 3: Ensure Razorpay SDK is loaded before opening checkout
+      if (!window.Razorpay) {
+        toast.error('Payment gateway not loaded. Please refresh the page and try again.');
+        return;
+      }
+
+      // Step 4: Open Razorpay checkout
       const result = await openRazorpayCheckout(orderRes.order, data, registrationId);
 
       if (result.cancelled) {
@@ -349,7 +360,7 @@ const CourseRegistration = () => {
         return;
       }
 
-      // Step 4: Show invoice on success
+      // Step 5: Show invoice on success
       const { verifyRes, razorpayPaymentId, razorpayOrderId } = result;
 
       if (verifyRes?.success) {
@@ -373,6 +384,7 @@ const CourseRegistration = () => {
       console.error('Payment flow error:', err);
       toast.error(err.message || 'Something went wrong. Please try again.');
     } finally {
+      // Always reset — even if we returned early inside try
       setIsLoading(false);
       isProcessingRef.current = false;
     }

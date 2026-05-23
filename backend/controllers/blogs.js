@@ -58,7 +58,10 @@ const blogSchema =
       Joi.string().allow(''),
 
     category:
-      Joi.string().allow('')
+      Joi.string().allow(''),
+
+    is_published:
+      Joi.boolean().optional()
 
 });
 
