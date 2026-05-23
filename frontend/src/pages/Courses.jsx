@@ -123,9 +123,9 @@ const Courses = () => {
                     <div className="p-4 d-flex flex-column flex-grow-1">
                       <h4 className="fw-bold text-white mb-3">{course.title}</h4>
                       <p style={{ color:'rgba(255,255,255,0.72)', lineHeight:'1.9', fontSize:'15px' }}>{course.description}</p>
-                      <p className="fw-bold mb-3" style={{ color:'#ffc107', fontSize:'18px' }}>
+                      {/* <p className="fw-bold mb-3" style={{ color:'#ffc107', fontSize:'18px' }}>
                         ₹{Number(course.price).toLocaleString()}
-                      </p>
+                      </p> */}
 
                       <div className="d-flex gap-3 mt-auto">
                         <motion.div whileHover={{ scale:1.05 }} whileTap={{ scale:0.95 }} style={{ width:'50%' }}>
