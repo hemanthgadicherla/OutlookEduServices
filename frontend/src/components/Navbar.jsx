@@ -134,6 +134,18 @@ const Navbar = () => {
           {/* right-side auth */}
           <div className="d-flex align-items-center gap-2">
 
+            {/* My Courses pill — visible in nav for logged-in users */}
+            {user && (
+              <Link
+                to="/lms"
+                onClick={() => setIsOpen(false)}
+                className="btn btn-sm d-flex align-items-center gap-1 fw-semibold"
+                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', borderRadius: 8, fontSize: 13, padding: '5px 14px', border: 'none' }}
+              >
+                <FaBookOpen size={12} /> My Courses
+              </Link>
+            )}
+
             {/* ── LOGGED OUT ── */}
             {!user && (
               <>

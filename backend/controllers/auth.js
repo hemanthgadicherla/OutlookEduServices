@@ -1,33 +1,14 @@
-const crypto    = require('crypto');
-const supabase  = require('../config/supabase');
-const { supabaseUrl, serviceRoleKey } = require('../config/supabase');
-const jwt       = require('jsonwebtoken');
+const crypto   = require('crypto');
+const bcrypt   = require('bcryptjs');
+const supabase = require('../config/supabase');
+const jwt      = require('jsonwebtoken');
 const validator = require('validator');
 
-// ── signInWithPassword via REST ──────────────────────────────────
-const signInWithPassword = async (email, password) => {
-  const res = await fetch(
-    `${supabaseUrl}/auth/v1/token?grant_type=password`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': serviceRoleKey },
-      body: JSON.stringify({ email, password })
-    }
-  );
-  const data = await res.json();
-  if (!res.ok || data.error) return { data: null, error: data };
-  return { data: { user: data.user }, error: null };
-};
+// Actual admins table columns: id (int), email, password, role, created_at, session_id
 
 const signAdminToken = (admin, sessionId) =>
   jwt.sign(
-    {
-      id:         admin.id,
-      email:      admin.email,
-      role:       'admin',
-      full_name:  admin.full_name || '',
-      session_id: sessionId
-    },
+    { id: admin.id, email: admin.email, role: 'admin', session_id: sessionId },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES || '7d' }
   );
@@ -35,52 +16,35 @@ const signAdminToken = (admin, sessionId) =>
 
 // ================================================================
 // ADMIN LOGIN  —  POST /api/auth/login
-// Reads from the separate `admins` table — never touches `users`.
+// Direct bcrypt auth against admins table (integer PK + password col)
 // ================================================================
 exports.login = async (req, res) => {
   try {
     let { email, password } = req.body;
 
-    if (!email || !password) {
+    if (!email || !password)
       return res.status(400).json({ success: false, message: 'Email and password are required' });
-    }
 
     email = email.trim().toLowerCase();
 
-    if (!validator.isEmail(email)) {
+    if (!validator.isEmail(email))
       return res.status(400).json({ success: false, message: 'Invalid email format' });
-    }
 
-    // Authenticate via Supabase Auth
-    const { data: authData, error: authError } = await signInWithPassword(email, password);
-    if (authError || !authData?.user) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
-    }
-
-    // Look up in admins table ONLY — not users table
-    const { data: admin, error: adminError } = await supabase
+    const { data: admin, error } = await supabase
       .from('admins')
-      .select('id, email, full_name, role, is_active')
-      .eq('id', authData.user.id)
+      .select('id, email, password, role')
+      .eq('email', email)
       .maybeSingle();
 
-    if (adminError || !admin) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. This account does not have admin privileges.'
-      });
-    }
+    if (error || !admin)
+      return res.status(403).json({ success: false, message: 'Access denied. This account does not have admin privileges.' });
 
-    if (admin.is_active === false) {
-      return res.status(403).json({ success: false, message: 'This admin account has been disabled' });
-    }
+    const passwordMatch = await bcrypt.compare(password, admin.password);
+    if (!passwordMatch)
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
 
-    // Generate new session_id and update last_login
     const sessionId = crypto.randomBytes(32).toString('hex');
-    await supabase
-      .from('admins')
-      .update({ session_id: sessionId, last_login: new Date().toISOString() })
-      .eq('id', admin.id);
+    await supabase.from('admins').update({ session_id: sessionId }).eq('id', admin.id);
 
     const token = signAdminToken(admin, sessionId);
 
@@ -88,7 +52,7 @@ exports.login = async (req, res) => {
       success: true,
       message: 'Login successful',
       token,
-      admin: { id: admin.id, email: admin.email, full_name: admin.full_name, role: admin.role }
+      admin: { id: admin.id, email: admin.email, role: admin.role }
     });
 
   } catch (err) {
@@ -100,97 +64,57 @@ exports.login = async (req, res) => {
 
 // ================================================================
 // ADMIN SIGNUP  —  POST /api/auth/admin-signup
-// Creates Supabase Auth user + row in `admins` table.
-// Does NOT touch the `users` table.
+// Inserts directly into admins table with bcrypt password hash.
+// Does NOT touch Supabase auth.
 // ================================================================
 exports.adminSignup = async (req, res) => {
   try {
     let { email, password, full_name, phone, secret_key } = req.body;
 
-    if (!secret_key || secret_key !== process.env.ADMIN_SECRET_KEY) {
+    if (!secret_key || secret_key !== process.env.ADMIN_SECRET_KEY)
       return res.status(400).json({ success: false, message: 'Invalid admin secret key' });
-    }
 
-    if (!email || !password || !full_name || !phone) {
-      return res.status(400).json({ success: false, message: 'Full name, email, phone and password are required' });
-    }
+    if (!email || !password)
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
 
-    email     = email.trim().toLowerCase();
-    full_name = full_name.trim();
-    phone     = phone.trim();
+    email = email.trim().toLowerCase();
 
-    if (!validator.isEmail(email)) {
+    if (!validator.isEmail(email))
       return res.status(400).json({ success: false, message: 'Invalid email format' });
-    }
 
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      return res.status(400).json({ success: false, message: 'Phone must be a valid 10-digit Indian mobile number' });
-    }
-
-    if (password.length < 8) {
+    if (password.length < 8)
       return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
-    }
 
-    // Check phone uniqueness in admins table
-    const { data: existingPhone } = await supabase
+    // Check email uniqueness
+    const { data: existing } = await supabase
+      .from('admins').select('id').eq('email', email).maybeSingle();
+
+    if (existing)
+      return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const { data: newAdmin, error: insertError } = await supabase
       .from('admins')
-      .select('id')
-      .eq('phone', phone)
-      .maybeSingle();
+      .insert([{ email, password: hashedPassword, role: 'admin' }])
+      .select('id, email, role')
+      .single();
 
-    if (existingPhone) {
-      return res.status(400).json({ success: false, message: 'This phone number is already registered' });
-    }
-
-    // Create Supabase Auth user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name, phone, role: 'admin' }
-    });
-
-    if (authError) {
-      const msg = authError.message?.toLowerCase();
-      if (msg.includes('already registered') || msg.includes('already exists')) {
-        return res.status(400).json({ success: false, message: 'An account with this email already exists' });
-      }
-      return res.status(400).json({ success: false, message: 'Failed to create admin account' });
-    }
-
-    // Insert into admins table — NOT users table
-    const { data: existingAdmin } = await supabase
-      .from('admins')
-      .select('id')
-      .eq('id', authData.user.id)
-      .maybeSingle();
-
-    if (existingAdmin) {
-      await supabase
-        .from('admins')
-        .update({ full_name, phone, role: 'admin', is_active: true })
-        .eq('id', authData.user.id);
-    } else {
-      const { error: insertError } = await supabase
-        .from('admins')
-        .insert([{ id: authData.user.id, email, full_name, phone, role: 'admin' }]);
-
-      if (insertError) {
-        console.error('Admin insert error:', insertError.message);
-        return res.status(500).json({ success: false, message: 'Account created but failed to save admin profile' });
-      }
+    if (insertError) {
+      console.error('Admin insert error:', insertError.message);
+      return res.status(500).json({ success: false, message: 'Failed to create admin account' });
     }
 
     const sessionId = crypto.randomBytes(32).toString('hex');
-    await supabase.from('admins').update({ session_id: sessionId }).eq('id', authData.user.id);
+    await supabase.from('admins').update({ session_id: sessionId }).eq('id', newAdmin.id);
 
-    const token = signAdminToken({ id: authData.user.id, email, full_name, role: 'admin' }, sessionId);
+    const token = signAdminToken(newAdmin, sessionId);
 
     return res.status(201).json({
       success: true,
       message: `Admin account created for ${email}`,
       token,
-      admin: { id: authData.user.id, email, full_name, role: 'admin' }
+      admin: { id: newAdmin.id, email: newAdmin.email, role: newAdmin.role }
     });
 
   } catch (err) {
@@ -204,8 +128,7 @@ exports.adminSignup = async (req, res) => {
 // VERIFY ADMIN TOKEN  —  GET /api/auth/verify
 // ================================================================
 exports.verifyAdmin = async (req, res) => {
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== 'admin')
     return res.status(403).json({ success: false, message: 'Admin access required' });
-  }
   return res.json({ success: true, admin: req.user });
 };

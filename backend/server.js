@@ -347,7 +347,7 @@ app.use(
       message:
 
         process.env.NODE_ENV ===
-        'development'
+          'development'
 
           ? err.message
 
@@ -376,11 +376,9 @@ app.listen(PORT, () => {
 
   console.log(
 
-    `Environment: ${
+    `Environment: ${process.env.NODE_ENV ||
 
-      process.env.NODE_ENV ||
-
-      'development'
+    'development'
 
     }`
 

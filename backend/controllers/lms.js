@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { getBunnySignedEmbedUrl } = require('../utils/bunny');
 const crypto   = require('crypto');
 
 // ─────────────────────────────────────────────────────────────
@@ -358,6 +359,161 @@ const markNotificationRead = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/lms/lesson/:id/video-url
+// Returns a 2-hour signed URL for streaming a private Supabase
+// Storage video. Verifies user has paid access to the course.
+// ─────────────────────────────────────────────────────────────
+const getLessonVideoUrl = async (req, res) => {
+  try {
+    const userId   = req.user.id;
+    const lessonId = parseInt(req.params.id);
+
+    const { data: lesson } = await supabase
+      .from('course_lessons').select('id, video_url, module_id, is_free').eq('id', lessonId).maybeSingle();
+
+    if (!lesson) return res.status(404).json({ success: false, message: 'Lesson not found' });
+
+    const hasBunny   = lesson.video_url?.startsWith('bunny:');
+    const hasStorage = lesson.video_url?.startsWith('storage:');
+
+    if (!hasBunny && !hasStorage)
+      return res.status(400).json({ success: false, message: 'This lesson has no hosted video' });
+
+    // Verify paid access (free lessons skip the check)
+    if (!lesson.is_free) {
+      const { data: mod } = await supabase
+        .from('course_modules').select('course_id').eq('id', lesson.module_id).maybeSingle();
+      if (mod) {
+        const paidIds = await getPaidCourseIds(userId);
+        if (!paidIds.includes(mod.course_id))
+          return res.status(403).json({ success: false, message: 'Access denied' });
+      }
+    }
+
+    // ── Bunny Stream: return a signed embed URL (token auth) ──
+    if (hasBunny) {
+      const videoId = lesson.video_url.replace('bunny:', '');
+      const { url, expires } = getBunnySignedEmbedUrl(videoId, 3600);
+      return res.json({ success: true, data: { url, type: 'bunny', expires_in: 3600 } });
+    }
+
+    // ── Legacy Supabase Storage: 1-hour signed download URL ──
+    const path = lesson.video_url.replace('storage:', '');
+    const { data, error } = await supabase.storage
+      .from('course-videos')
+      .createSignedUrl(path, 3600);
+
+    if (error) return res.status(500).json({ success: false, message: 'Could not generate stream URL' });
+
+    return res.json({ success: true, data: { url: data.signedUrl, type: 'storage', expires_in: 3600 } });
+  } catch (err) {
+    console.error('getLessonVideoUrl error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to get video URL' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/lms/resume  — last-touched lesson across all courses
+// Returns the most recently updated lesson_progress row so the
+// dashboard can show a "Continue Learning" card.
+// ─────────────────────────────────────────────────────────────
+const getResume = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { data: latest } = await supabase
+      .from('lesson_progress')
+      .select('lesson_id, completed, watched_seconds, updated_at')
+      .eq('user_id', userId)
+      .eq('completed', false)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!latest) return res.json({ success: true, data: null });
+
+    const { data: lesson } = await supabase
+      .from('course_lessons')
+      .select('id, title, module_id')
+      .eq('id', latest.lesson_id)
+      .maybeSingle();
+
+    if (!lesson) return res.json({ success: true, data: null });
+
+    const { data: mod } = await supabase
+      .from('course_modules')
+      .select('id, course_id')
+      .eq('id', lesson.module_id)
+      .maybeSingle();
+
+    if (!mod) return res.json({ success: true, data: null });
+
+    const { data: course } = await supabase
+      .from('courses')
+      .select('id, title, image, category')
+      .eq('id', mod.course_id)
+      .maybeSingle();
+
+    return res.json({
+      success: true,
+      data: course ? { course, lesson_id: lesson.id, lesson_title: lesson.title, watched_seconds: latest.watched_seconds } : null
+    });
+  } catch (err) {
+    console.error('getResume error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch resume' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/lms/course/:id/suggestions
+// Returns other paid courses so the viewer can show "Up Next"
+// ─────────────────────────────────────────────────────────────
+const getCourseSuggestions = async (req, res) => {
+  try {
+    const userId   = req.user.id;
+    const courseId = parseInt(req.params.id);
+
+    const { data: user } = await supabase
+      .from('users').select('email').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const { data: paidRegs } = await supabase
+      .from('registrations')
+      .select('course_id, selected_course')
+      .eq('email', user.email)
+      .eq('payment_status', 'paid');
+
+    if (!paidRegs || paidRegs.length === 0)
+      return res.json({ success: true, data: { other_courses: [] } });
+
+    const courseIds   = paidRegs.filter(r => r.course_id && r.course_id !== courseId).map(r => r.course_id);
+    const courseNames = paidRegs.filter(r => !r.course_id).map(r => r.selected_course);
+
+    let others = [];
+    if (courseIds.length > 0) {
+      const { data } = await supabase
+        .from('courses').select('id, title, description, image, category').in('id', courseIds);
+      if (data) others = [...others, ...data];
+    }
+    if (courseNames.length > 0) {
+      const { data } = await supabase
+        .from('courses').select('id, title, description, image, category').in('title', courseNames)
+        .neq('id', courseId);
+      if (data) others = [...others, ...data];
+    }
+
+    // Deduplicate and exclude current course
+    const seen = new Set([courseId]);
+    const unique = others.filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; });
+
+    return res.json({ success: true, data: { other_courses: unique.slice(0, 5) } });
+  } catch (err) {
+    console.error('getCourseSuggestions error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch suggestions' });
+  }
+};
+
 module.exports = {
   getUserCourses,
   getCourseContent,
@@ -366,5 +522,8 @@ module.exports = {
   getCertificates,
   generateCertificate,
   getNotifications,
-  markNotificationRead
+  markNotificationRead,
+  getCourseSuggestions,
+  getResume,
+  getLessonVideoUrl
 };

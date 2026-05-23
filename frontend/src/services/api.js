@@ -671,6 +671,27 @@ export const lmsAPI = {
       headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
     });
     return await response.json();
+  },
+  getLessonVideoUrl: async (lessonId) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/lesson/${lessonId}/video-url`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
+  getResume: async () => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/resume`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
+  getCourseSuggestions: async (courseId) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/course/${courseId}/suggestions`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
   }
 };
 
@@ -767,6 +788,57 @@ export const curriculumAPI = {
   deleteLesson: async (id) => {
     const token = localStorage.getItem('adminToken');
     const r = await fetch(`${API_BASE_URL}/curriculum/lessons/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return r.json();
+  },
+  getBunnyUploadToken: async (lessonId, { title, description } = {}) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/${lessonId}/bunny-upload-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ title, description }),
+    });
+    return r.json();
+  },
+  listVideos: async () => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/videos`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+    });
+    return r.json();
+  },
+  setVideoUrl: async (lessonId, video_url) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/${lessonId}/video-url`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ video_url }),
+    });
+    return r.json();
+  },
+  reorderLessons: async (items) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ items })
+    });
+    return r.json();
+  },
+  reorderModules: async (items) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/modules/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ items })
+    });
+    return r.json();
+  },
+  deleteVideo: async (lessonId) => {
+    const token = localStorage.getItem('adminToken');
+    const r = await fetch(`${API_BASE_URL}/curriculum/lessons/${lessonId}/video`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
     });

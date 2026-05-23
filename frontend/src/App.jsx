@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from "react-router-dom";
 
 import { ToastContainer } from 'react-toastify';
@@ -8,7 +8,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 import { FaWhatsapp } from 'react-icons/fa';
 
-// Components
+// Core components — always needed, not lazy
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from "./components/ScrollToTop";
@@ -18,49 +18,57 @@ import AuthHandler from "./components/AuthHandler";
 import CookieConsent from "./components/CookieConsent";
 import SessionGuard from "./components/SessionGuard";
 
-// Public pages
+// Home is eager — it's the landing page, must be instant
 import Home from './pages/Home';
-import About from './pages/About';
-import Courses from './pages/Courses';
-import StudyAbroad from './pages/StudyAbroad';
-import CountryDetail from './pages/CountryDetail';
-import VisitVisa from './pages/VisitVisa';
-import Blogs from './pages/Blogs';
-import Contact from './pages/Contact';
-import BlogDetail from "./pages/BlogDetail";
-import CourseDetail from "./pages/CourseDetail";
 
-// Auth pages
-import Login from "./pages/Login";
-import Registration from './pages/Registration';
-import AuthCallback from "./pages/AuthCallback";
+// Everything else is lazy — each becomes its own JS chunk
+const About              = lazy(() => import('./pages/About'));
+const Courses            = lazy(() => import('./pages/Courses'));
+const CourseDetail       = lazy(() => import('./pages/CourseDetail'));
+const StudyAbroad        = lazy(() => import('./pages/StudyAbroad'));
+const CountryDetail      = lazy(() => import('./pages/CountryDetail'));
+const VisitVisa          = lazy(() => import('./pages/VisitVisa'));
+const Blogs              = lazy(() => import('./pages/Blogs'));
+const BlogDetail         = lazy(() => import('./pages/BlogDetail'));
+const Contact            = lazy(() => import('./pages/Contact'));
 
-// User pages
-import CourseRegistration from './pages/CourseRegistration';
-import Account from "./pages/Account";
+const Login              = lazy(() => import('./pages/Login'));
+const Registration       = lazy(() => import('./pages/Registration'));
+const AuthCallback       = lazy(() => import('./pages/AuthCallback'));
 
-// LMS pages
-import LMSDashboard from "./pages/LMSDashboard";
-import LMSCourses from "./pages/LMSCourses";
-import LMSCourseViewer from "./pages/LMSCourseViewer";
-import LMSCertificates from "./pages/LMSCertificates";
-import LMSNotifications from "./pages/LMSNotifications";
-import LMSExams from "./pages/LMSExams";
-import LMSSettings from "./pages/LMSSettings";
+const CourseRegistration = lazy(() => import('./pages/CourseRegistration'));
+const Account            = lazy(() => import('./pages/Account'));
 
-// Admin pages
-import AdminDashboard from './pages/AdminDashboard';
-import AdminCourses from "./pages/AdminCourses";
-import AdminBlogs from "./pages/AdminBlogs";
-import AdminLeads from "./pages/AdminLeads";
-import AdminRegistrations from "./pages/AdminRegistrations";
-import AdminLogin from "./pages/AdminLogin";
-import AdminSignup from "./pages/AdminSignup";
+const LMSDashboard       = lazy(() => import('./pages/LMSDashboard'));
+const LMSCourses         = lazy(() => import('./pages/LMSCourses'));
+const LMSCourseViewer    = lazy(() => import('./pages/LMSCourseViewer'));
+const LMSCertificates    = lazy(() => import('./pages/LMSCertificates'));
+const LMSNotifications   = lazy(() => import('./pages/LMSNotifications'));
+const LMSExams           = lazy(() => import('./pages/LMSExams'));
+const LMSSettings        = lazy(() => import('./pages/LMSSettings'));
+const LMSProfile         = lazy(() => import('./pages/LMSProfile'));
 
-// Legal pages
-import TermsAndConditions from "./pages/TermsAndConditions";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import CookiePolicy from "./pages/CookiePolicy";
+const AdminDashboard     = lazy(() => import('./pages/AdminDashboard'));
+const AdminCourses       = lazy(() => import('./pages/AdminCourses'));
+const AdminCourseEditor  = lazy(() => import('./pages/AdminCourseEditor'));
+const AdminBlogs         = lazy(() => import('./pages/AdminBlogs'));
+const AdminLeads         = lazy(() => import('./pages/AdminLeads'));
+const AdminRegistrations = lazy(() => import('./pages/AdminRegistrations'));
+const AdminLogin         = lazy(() => import('./pages/AdminLogin'));
+const AdminSignup        = lazy(() => import('./pages/AdminSignup'));
+
+const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
+const PrivacyPolicy      = lazy(() => import('./pages/PrivacyPolicy'));
+const CookiePolicy       = lazy(() => import('./pages/CookiePolicy'));
+
+// Minimal page-transition spinner shown while a chunk loads
+const PageLoader = () => (
+  <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="spinner-border text-primary" role="status">
+      <span className="visually-hidden">Loading…</span>
+    </div>
+  </div>
+);
 
 function App() {
   const location     = useLocation();
@@ -89,6 +97,7 @@ function App() {
         {/* public-layout adds padding-top to clear the fixed Navbar.
             Admin, LMS, auth pages manage their own spacing. */}
         <div className={!shouldHideNavbar ? 'public-layout' : ''}>
+          <Suspense fallback={<PageLoader />}>
           <Routes>
 
             {/* ── Public ── */}
@@ -120,6 +129,7 @@ function App() {
             <Route path="/lms/notifications"         element={<LMSNotifications />} />
             <Route path="/lms/exams"                 element={<LMSExams />} />
             <Route path="/lms/settings"              element={<LMSSettings />} />
+            <Route path="/lms/profile"               element={<LMSProfile />} />
 
             {/* ── Legal ── */}
             <Route path="/terms-and-conditions"      element={<TermsAndConditions />} />
@@ -132,12 +142,14 @@ function App() {
 
             {/* ── Admin protected — ALL admin pages require admin role ── */}
             <Route path="/admin/dashboard"     element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-            <Route path="/admin/courses"       element={<AdminProtectedRoute><AdminCourses /></AdminProtectedRoute>} />
+            <Route path="/admin/courses"        element={<AdminProtectedRoute><AdminCourses /></AdminProtectedRoute>} />
+            <Route path="/admin/courses/:id"   element={<AdminProtectedRoute><AdminCourseEditor /></AdminProtectedRoute>} />
             <Route path="/admin/blogs"         element={<AdminProtectedRoute><AdminBlogs /></AdminProtectedRoute>} />
             <Route path="/admin/leads"         element={<AdminProtectedRoute><AdminLeads /></AdminProtectedRoute>} />
             <Route path="/admin/registrations" element={<AdminProtectedRoute><AdminRegistrations /></AdminProtectedRoute>} />
 
           </Routes>
+          </Suspense>
         </div>
 
         {!shouldHideFooter && <Footer />}
