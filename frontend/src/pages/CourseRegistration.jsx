@@ -522,7 +522,7 @@ const CourseRegistration = () => {
                         }}
                       >
                         <option value="">Choose a course...</option>
-                        {courses.map(c => (
+                        {courses.filter(c => c.is_published).map(c => (
                           <option key={c.id} value={c.title}>
                             {c.title} — ₹{Number(c.price).toLocaleString('en-IN')}
                           </option>
