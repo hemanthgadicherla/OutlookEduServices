@@ -204,6 +204,17 @@ const CourseRegistration = () => {
     }
   }, []);
 
+  // ── dynamically load Razorpay SDK only on this page ──────────
+  useEffect(() => {
+    if (window.Razorpay) return;
+    const script = document.createElement('script');
+    script.src   = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onerror = () => toast.error('Failed to load payment gateway. Please refresh.');
+    document.body.appendChild(script);
+    return () => { if (script.parentNode) script.parentNode.removeChild(script); };
+  }, []);
+
   // ── load courses ─────────────────────────────────────────────
   useEffect(() => {
     courseAPI.getCourses()
@@ -318,51 +329,45 @@ const CourseRegistration = () => {
       const registrationId = regRes.data.id;
 
       // Step 2: Create Razorpay order (amount resolved server-side)
-      // const orderRes = await paymentAPI.createOrder(registrationId);
-      // if (!orderRes.success) {
-      //   toast.error(orderRes.message || 'Could not initiate payment. Please try again.');
-      //   return;
-      // }
+      const orderRes = await paymentAPI.createOrder(registrationId);
+      if (!orderRes.success) {
+        toast.error(orderRes.message || 'Could not initiate payment. Please try again.');
+        return;
+      }
 
-      // // Step 3: Open Razorpay checkout
-      // const result = await openRazorpayCheckout(orderRes.order, data, registrationId);
+      // Step 3: Open Razorpay checkout
+      const result = await openRazorpayCheckout(orderRes.order, data, registrationId);
 
-      // if (result.cancelled) {
-      //   toast.info('Payment cancelled. Your registration is saved — you can complete payment anytime.');
-      //   return;
-      // }
+      if (result.cancelled) {
+        toast.info('Payment cancelled. Your registration is saved — you can complete payment anytime.');
+        return;
+      }
 
-      // if (result.failed) {
-      //   setPaymentError(result.error || 'Payment failed. Please try again.');
-      //   toast.error('Payment failed. Please try again or use a different payment method.');
-      //   return;
-      // }
+      if (result.failed) {
+        setPaymentError(result.error || 'Payment failed. Please try again.');
+        toast.error('Payment failed. Please try again or use a different payment method.');
+        return;
+      }
 
-      // // Step 4: Show invoice on success
-      // const { verifyRes, razorpayPaymentId, razorpayOrderId } = result;
+      // Step 4: Show invoice on success
+      const { verifyRes, razorpayPaymentId, razorpayOrderId } = result;
 
-      // if (verifyRes?.success) {
-      //   setInvoiceData({
-      //     courseName,
-      //     coursePrice:      course?.price || orderRes.order.amount / 100,
-      //     studentName:      data.full_name,
-      //     email:            data.email,
-      //     phone:            data.phone,
-      //     razorpayPaymentId,
-      //     razorpayOrderId,
-      //     paidAt:           new Date().toISOString()
-      //   });
-      //   toast.success(`Successfully registered for ${courseName}!`);
-      // } else {
-      //   setPaymentError('Payment verification failed. Please contact support with your payment ID.');
-      //   toast.error(verifyRes?.message || 'Verification failed. Contact support.');
-      // }
-
-    // Registration successful
-    toast.success(`Successfully registered for ${courseName}!`);
-
-    // Redirect to courses page
-    navigate('/lms');
+      if (verifyRes?.success) {
+        setInvoiceData({
+          courseName,
+          coursePrice:      course?.price || orderRes.order.amount / 100,
+          studentName:      data.full_name,
+          email:            data.email,
+          phone:            data.phone,
+          razorpayPaymentId,
+          razorpayOrderId,
+          paidAt:           new Date().toISOString()
+        });
+        toast.success(`Successfully registered for ${courseName}!`);
+      } else {
+        setPaymentError('Payment verification failed. Please contact support with your payment ID.');
+        toast.error(verifyRes?.message || 'Verification failed. Contact support.');
+      }
 
     } catch (err) {
       console.error('Payment flow error:', err);
