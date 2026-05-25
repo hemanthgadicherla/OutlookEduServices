@@ -1,12 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-// import { FaGraduationCap, FaPassport, FaBookOpen, FaUsers } from 'react-icons/fa';
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Autoplay} from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import { FaGraduationCap, FaPassport, FaBookOpen, FaUsers, FaHandshake, FaPlaneDeparture, FaMoneyCheckAlt, FaUserGraduate, FaWpforms, } from "react-icons/fa";
+import Globe3D from '../components/Globe3D';
 
 const Home = () => {
   const fadeInUp = {
@@ -931,594 +931,88 @@ const Home = () => {
     </section>
 
 
-    {/* PREMIUM GLOBAL DESTINATIONS SECTION */}
-
+    {/* GLOBAL DESTINATIONS — ROTATING GLOBE */}
     <section
       className="position-relative overflow-hidden py-5"
-      style={{
-        background:
-          "linear-gradient(135deg,#020617,#081120,#020617)",
-      }}
+      style={{ background: "linear-gradient(135deg,#020617,#081120,#020617)" }}
     >
-      {/* PREMIUM GLOW EFFECTS */}
+      {/* glow blobs */}
+      <div style={{ position:"absolute", width:"500px", height:"500px", background:"rgba(255,193,7,0.10)", borderRadius:"50%", filter:"blur(160px)", top:"-220px", left:"-220px", pointerEvents:"none" }} />
+      <div style={{ position:"absolute", width:"450px", height:"450px", background:"rgba(255,193,7,0.08)", borderRadius:"50%", filter:"blur(160px)", bottom:"-180px", right:"-180px", pointerEvents:"none" }} />
 
-      <div
-        style={{
-          position: "absolute",
-          width: "500px",
-          height: "500px",
-          background: "rgba(255,193,7,0.10)",
-          borderRadius: "50%",
-          filter: "blur(160px)",
-          top: "-220px",
-          left: "-220px",
-        }}
-      />
+      <div className="container position-relative" style={{ zIndex:2 }}>
 
-      <div
-        style={{
-          position: "absolute",
-          width: "450px",
-          height: "450px",
-          background: "rgba(255,193,7,0.08)",
-          borderRadius: "50%",
-          filter: "blur(160px)",
-          bottom: "-180px",
-          right: "-180px",
-        }}
-      />
-
-      <div className="container position-relative" style={{ zIndex: 2 }}>
-
-        {/* HEADER */}
-
+        {/* header */}
         <div className="text-center mb-5">
-
-          <span
-            className="px-4 py-2 d-inline-block mb-4"
-            style={{
-              borderRadius: "40px",
-              background: "rgba(255,193,7,0.12)",
-              color: "#ffc107",
-              border:
-                "1px solid rgba(255,193,7,0.25)",
-              fontWeight: "600",
-              letterSpacing: "1px",
-            }}
-          >
+          <span className="px-4 py-2 d-inline-block mb-4" style={{ borderRadius:"40px", background:"rgba(255,193,7,0.12)", color:"#ffc107", border:"1px solid rgba(255,193,7,0.25)", fontWeight:"600", letterSpacing:"1px" }}>
             GLOBAL STUDY DESTINATIONS
           </span>
-
-          <h2
-            className="fw-bold text-white"
-            style={{
-              fontSize: "clamp(2.5rem,5vw,5rem)",
-              lineHeight: "1.2",
-            }}
-          >
+          <h2 className="fw-bold text-white" style={{ fontSize:"clamp(2rem,5vw,4rem)", lineHeight:"1.2" }}>
             Your Journey From
-            <span style={{ color: "#ffc107" }}>
-              {" "}India To The World
-            </span>
+            <span style={{ color:"#ffc107" }}> India To The World</span>
           </h2>
-
-          <p
-            className="mx-auto mt-4"
-            style={{
-              maxWidth: "850px",
-              color: "rgba(255,255,255,0.72)",
-              lineHeight: "2",
-              fontSize: "18px",
-            }}
-          >
-            Explore top global destinations with
-            expert visa assistance, overseas education
-            guidance, and premium admission support.
+          <p className="mx-auto mt-3" style={{ maxWidth:"750px", color:"rgba(255,255,255,0.7)", lineHeight:"1.9", fontSize:"17px" }}>
+            Expert visa assistance, overseas education guidance, and premium admission support to top global destinations.
           </p>
         </div>
 
-        {/* MAIN MAP CARD */}
-
-        <div
-          className="position-relative mx-auto premium-map-box"
-        >
-
-          {/* GRID OVERLAY */}
-
-          <div className="map-grid"></div>
-
-          {/* WHITE WORLD MAP */}
-
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg"
-            alt="World Map"
-            className="world-map"
-          />
-
-          {/* SVG CONNECTION ROUTES */}
-
-          <svg
-            viewBox="0 0 1400 820"
-            className="routes-svg"
-          >
-
-            {/* USA */}
-            <path
-              d="M870 410 Q650 250 290 320"
-              className="route-line"
-            />
-
-            {/* CANADA */}
-            <path
-              d="M870 410 Q620 170 250 200"
-              className="route-line"
-            />
-
-            {/* UK */}
-            <path
-              d="M870 410 Q760 280 640 280"
-              className="route-line"
-            />
-
-            {/* EUROPE */}
-            <path
-              d="M870 410 Q790 330 760 350"
-              className="route-line"
-            />
-
-            {/* AUSTRALIA */}
-            <path
-              d="M870 410 Q980 520 1120 620"
-              className="route-line"
-            />
-
-            {/* NEW ZEALAND */}
-            <path
-              d="M870 410 Q1080 590 1240 720"
-              className="route-line"
-            />
-
-          </svg>
-
-          {/* INDIA HUB */}
-
-          <div className="india-hub">
-
-            <div className="india-ring"></div>
-            <div className="india-ring delay"></div>
-
-            <div className="india-flag-box">
-
-              <img
-                src="https://flagcdn.com/w320/in.png"
-                alt="India"
-              />
-
-            </div>
-
-            <h3>India</h3>
-
+        {/* globe + destinations layout */}
+        <div className="row align-items-center g-4">
+          {/* Globe — full width on mobile, centered on desktop */}
+          <div className="col-12 col-lg-8 mx-auto">
+            <Globe3D />
           </div>
+        </div>
 
-          {/* DESTINATION CARDS */}
-
-          {[
-            {
-              name: "Canada",
-              flag: "https://flagcdn.com/w320/ca.png",
-              top: "20%",
-              left: "18%",
-            },
-
-            {
-              name: "USA",
-              flag: "https://flagcdn.com/w320/us.png",
-              top: "34%",
-              left: "22%",
-            },
-
-            {
-              name: "UK",
-              flag: "https://flagcdn.com/w320/gb.png",
-              top: "28%",
-              left: "48%",
-            },
-
-            {
-              name: "Europe",
-              flag:
-                "https://upload.wikimedia.org/wikipedia/commons/b/b7/Flag_of_Europe.svg",
-              top: "38%",
-              left: "55%",
-            },
-
-            {
-              name: "Australia",
-              flag: "https://flagcdn.com/w320/au.png",
-              top: "72%",
-              left: "82%",
-            },
-
-            {
-              name: "New Zealand",
-              flag: "https://flagcdn.com/w320/nz.png",
-              top: "84%",
-              left: "92%",
-            },
-
-          ].map((country, index) => (
-
-            <div
-              key={index}
-              className="destination-card"
-              style={{
-                top: country.top,
-                left: country.left,
-                animationDelay: `${index * 0.4}s`,
+        {/* Destination cards below globe */}
+        <div className="row g-3 mt-4 justify-content-center">
+          {/* FLOATING DESTINATION TAGS */}
+          <motion.div
+             initial={{
+                     opacity: 0,
+                     y: 20,
+              }}      
+              animate={{  
+                      opacity: 1,
+                      y: 0,
               }}
-            >
-
-              <div className="destination-flag">
-
-                <img
-                  src={country.flag}
-                  alt={country.name}
-                />
-
-              </div>
-
-              <div className="destination-content">
-
-                <h5>{country.name}</h5>
-
-              </div>
-
-            </div>
-
-          ))}
-
-          {/* MOVING AIRPLANE */}
-
-          <div className="plane-animation">
-
-            <i className="fas fa-plane"></i>
-
-          </div>
-
-          {/* FLOATING STATS */}
-
-          <div className="stats-card">
-
-            <h2>250+</h2>
-
-            <p>Students Guided</p>
-
-          </div>
-
-          <div className="success-card">
-
-            <h2>98%</h2>
-
-            <p>Visa Success Rate</p>
-
-          </div>
-
+              transition={{
+                      delay: 1,
+              }}  
+              className="d-flex flex-wrap justify-content-center gap-3 mt-5">
+              {[
+                "🇺🇸 USA",
+                 "🇬🇧 UK",
+                  "🇨🇦 Canada",
+                  "🇦🇺 Australia",
+                  "🇳🇿 New Zealand",            
+                  "🇮🇪 Ireland",
+                  "🇪🇺 Europe",
+                ].map((country, index) => (
+                <motion.div
+                  key={index}
+                  whileHover={{
+                         y: -5,  
+                         scale: 1.05,
+                  }}
+                  className="px-4 py-2"    
+                  style={{
+                      background:
+                            "rgba(255,255,255,0.08)",
+                      borderRadius: "40px",
+                      color: "#fff",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      backdropFilter: "blur(10px)",
+                      fontWeight: "500",
+                  }}
+                  >    
+                  {country}     
+                </motion.div>
+                ))
+               }    
+          </motion.div>
         </div>
       </div>
-
-      {/* ====================== */}
-      {/* CSS */}
-      {/* ====================== */}
-
-      <style>
-        {`
-
-          .premium-map-box{
-            max-width:1400px;
-            min-height:820px;
-            border-radius:40px;
-            overflow:hidden;
-            background:rgba(255,255,255,0.04);
-            border:1px solid rgba(255,255,255,0.08);
-            backdrop-filter:blur(20px);
-            box-shadow:0 30px 80px rgba(0,0,0,0.45);
-          }
-
-          .map-grid{
-            position:absolute;
-            inset:0;
-            background-image:
-              linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size:60px 60px;
-            opacity:0.3;
-          }
-
-          .world-map{
-            width:100%;
-            height:100%;
-            object-fit:cover;
-            position:absolute;
-            inset:0;
-            filter:brightness(0) invert(1) opacity(0.22);
-            transform:scale(1.05);
-          }
-
-          .routes-svg{
-            position:absolute;
-            inset:0;
-            width:100%;
-            height:100%;
-            z-index:2;
-          }
-
-          .route-line{
-            stroke:#ffc107;
-            stroke-width:3;
-            fill:none;
-            stroke-linecap:round;
-            opacity:0.8;
-            stroke-dasharray:12 14;
-            animation:moveRoute 1.2s linear infinite;
-            filter:drop-shadow(0 0 8px rgba(255,193,7,0.45));
-          }
-
-          .india-hub{
-            position:absolute;
-            top:50%;
-            left:72%;
-            transform:translate(-50%,-50%);
-            z-index:6;
-          }
-
-          .india-flag-box{
-            width:120px;
-            height:120px;
-            border-radius:50%;
-            overflow:hidden;
-            border:5px solid rgba(255,193,7,0.7);
-            background:#fff;
-            position:relative;
-            z-index:2;
-            box-shadow:0 0 50px rgba(255,193,7,0.7);
-            animation:pulse 2.5s infinite;
-          }
-
-          .india-flag-box img{
-            width:100%;
-            height:100%;
-            object-fit:cover;
-          }
-
-          .india-hub h3{
-            color:#ffc107;
-            font-weight:800;
-            margin-top:20px;
-            text-align:center;
-            letter-spacing:1px;
-          }
-
-          .india-ring{
-            position:absolute;
-            width:180px;
-            height:180px;
-            border:2px solid rgba(255,193,7,0.35);
-            border-radius:50%;
-            top:50%;
-            left:50%;
-            transform:translate(-50%,-50%);
-            animation:pulseRing 3s linear infinite;
-          }
-
-          .india-ring.delay{
-            animation-delay:1.5s;
-          }
-
-          .destination-card{
-            position:absolute;
-            transform:translate(-50%,-50%);
-            z-index:5;
-            display:flex;
-            align-items:center;
-            gap:14px;
-            padding:14px 18px;
-            border-radius:22px;
-            background:rgba(255,255,255,0.08);
-            backdrop-filter:blur(14px);
-            border:1px solid rgba(255,255,255,0.08);
-            box-shadow:0 15px 40px rgba(0,0,0,0.35);
-            animation:float 5s ease-in-out infinite;
-          }
-
-          .destination-flag{
-            width:70px;
-            height:70px;
-            border-radius:50%;
-            overflow:hidden;
-            border:3px solid rgba(255,193,7,0.6);
-            flex-shrink:0;
-            box-shadow:0 0 25px rgba(255,193,7,0.35);
-          }
-
-          .destination-flag img{
-            width:100%;
-            height:100%;
-            object-fit:cover;
-          }
-
-          .destination-content h5{
-            color:#fff;
-            font-weight:700;
-            margin-bottom:4px;
-          }
-
-          .destination-content small{
-            color:#ffc107;
-            font-weight:600;
-          }
-
-          .plane-animation{
-            position:absolute;
-            top:48%;
-            left:50%;
-            z-index:6;
-            animation:fly 14s linear infinite;
-          }
-
-          .plane-animation i{
-            color:#ffc107;
-            font-size:48px;
-            transform:rotate(35deg);
-            filter:drop-shadow(0 0 20px rgba(255,193,7,0.7));
-          }
-
-          .stats-card,
-          .success-card{
-            position:absolute;
-            padding:24px 30px;
-            border-radius:24px;
-            background:rgba(255,255,255,0.08);
-            backdrop-filter:blur(14px);
-            border:1px solid rgba(255,255,255,0.08);
-            z-index:5;
-            box-shadow:0 15px 40px rgba(0,0,0,0.35);
-          }
-
-          .stats-card{
-            top:8%;
-            right:5%;
-          }
-
-          .success-card{
-            bottom:8%;
-            left:5%;
-          }
-
-          .stats-card h2,
-          .success-card h2{
-            color:#ffc107;
-            font-size:42px;
-            font-weight:800;
-            margin-bottom:8px;
-          }
-
-          .stats-card p,
-          .success-card p{
-            color:rgba(255,255,255,0.75);
-            margin:0;
-          }
-
-          @keyframes moveRoute{
-
-            from{
-              stroke-dashoffset:0;
-            }
-
-            to{
-              stroke-dashoffset:-26;
-            }
-          }
-
-          @keyframes pulse{
-            0%{
-              transform:scale(1);
-            }
-
-            50%{
-              transform:scale(1.08);
-            }
-
-            100%{
-              transform:scale(1);
-            }
-          }
-
-          @keyframes pulseRing{
-            0%{
-              transform:translate(-50%,-50%) scale(0.8);
-              opacity:1;
-            }
-
-            100%{
-              transform:translate(-50%,-50%) scale(1.4);
-              opacity:0;
-            }
-          }
-
-          @keyframes float{
-            0%{
-              transform:translate(-50%,-50%) translateY(0px);
-            }
-
-            50%{
-              transform:translate(-50%,-50%) translateY(-12px);
-            }
-
-            100%{
-              transform:translate(-50%,-50%) translateY(0px);
-            }
-          }
-
-          @keyframes fly{
-            0%{
-              transform:translateX(-250px) translateY(0px);
-            }
-
-            50%{
-              transform:translateX(380px) translateY(-180px);
-            }
-
-            100%{
-              transform:translateX(-250px) translateY(0px);
-            }
-          }
-
-          @media(max-width:992px){
-
-            .destination-card{
-              padding:10px 14px;
-            }
-
-            .destination-flag{
-              width:55px;
-              height:55px;
-            }
-
-            .destination-content h5{
-              font-size:14px;
-            }
-
-            .stats-card,
-            .success-card{
-              display:none;
-            }
-
-          }
-
-          @media(max-width:768px){
-
-            .premium-map-box{
-              min-height:650px;
-            }
-
-            .destination-content{
-              display:none;
-            }
-
-            .destination-card{
-              padding:8px;
-              border-radius:50%;
-            }
-
-            .india-flag-box{
-              width:90px;
-              height:90px;
-            }
-
-          }
-
-        `}
-      </style>
     </section>        
 
 
