@@ -212,37 +212,44 @@ const LeadPopup = () => {
 
           {/* Subject */}
           <Form.Group className="mb-3">
-            <Form.Select
-              name="subject"
-              value={formData.subject}
-              onChange={handleInputChange}
-              required
-              style={{
-                background: "#1f2937",
-                border: "1px solid rgba(255,215,0,0.2)",
-                color: "white",
-                borderRadius: "10px",
-                padding: "12px"
-              }}
-            >
-              <option value="">Select Services</option>
-
-              <option value="Study Abroad Consultation">
-                Study Abroad Consultation
-              </option>
-
-              <option value="Visa Services">
-                Visa Services
-              </option>
-
-              <option value="Course Information">
-                Course Information
-              </option>
-
-              <option value="Other">
-                Other
-              </option>
-            </Form.Select>
+            <div style={{ position: 'relative' }}>
+              <Form.Select
+                name="subject"
+                value={formData.subject}
+                onChange={handleInputChange}
+                required
+                style={{
+                  background: "#1f2937",
+                  border: "1px solid rgba(255,215,0,0.2)",
+                  color: formData.subject ? "white" : "#9ca3af",
+                  borderRadius: "10px",
+                  padding: "12px 40px 12px 12px",
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  MozAppearance: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="" style={{ color: "#9ca3af" }}>Select Services</option>
+                <option value="Study Abroad Consultation" style={{ color: "white" }}>Study Abroad Consultation</option>
+                <option value="Visa Services"             style={{ color: "white" }}>Visa Services</option>
+                <option value="Course Information"        style={{ color: "white" }}>Course Information</option>
+                <option value="Other"                     style={{ color: "white" }}>Other</option>
+              </Form.Select>
+              {/* Custom chevron icon */}
+              <div style={{
+                position:      'absolute',
+                right:         12,
+                top:           '50%',
+                transform:     'translateY(-50%)',
+                pointerEvents: 'none',
+                color:         '#FFD700',
+                fontSize:      14,
+                lineHeight:    1,
+              }}>
+                ▼
+              </div>
+            </div>
           </Form.Group>
 
           {/* Submit */}
