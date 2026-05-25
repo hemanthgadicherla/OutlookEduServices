@@ -194,17 +194,22 @@ CREATE INDEX idx_course_modules_course_id ON course_modules (course_id);
 
 -- ----------------------------------------------------------------
 -- COURSE LESSONS
+-- video_source: 'youtube' | 'bunny' | 'url'
+-- duration:     display string e.g. '12:30'
+-- is_free:      true = free preview, false = paid only
 -- ----------------------------------------------------------------
 CREATE TABLE course_lessons (
-  id          SERIAL       PRIMARY KEY,
-  module_id   INTEGER      NOT NULL REFERENCES course_modules(id) ON DELETE CASCADE,
-  title       VARCHAR(255) NOT NULL,
-  video_url   TEXT,
-  content     TEXT,
-  position    SMALLINT     NOT NULL DEFAULT 0,
-  is_free     BOOLEAN      NOT NULL DEFAULT FALSE,
-  created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+  id           SERIAL       PRIMARY KEY,
+  module_id    INTEGER      NOT NULL REFERENCES course_modules(id) ON DELETE CASCADE,
+  title        VARCHAR(255) NOT NULL,
+  video_url    TEXT,
+  video_source VARCHAR(20),               -- 'youtube' | 'bunny' | 'url'
+  content      TEXT,
+  duration     VARCHAR(20),               -- e.g. '12:30'
+  position     SMALLINT     NOT NULL DEFAULT 0,
+  is_free      BOOLEAN      NOT NULL DEFAULT FALSE,
+  created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 CREATE TRIGGER course_lessons_updated_at
@@ -212,6 +217,7 @@ CREATE TRIGGER course_lessons_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE INDEX idx_course_lessons_module_id ON course_lessons (module_id);
+CREATE INDEX idx_course_lessons_is_free   ON course_lessons (is_free);
 
 
 -- ----------------------------------------------------------------
