@@ -1,27 +1,24 @@
-import React, { lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from "react-router-dom";
-
+import { lazy, Suspense } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-
 import { FaWhatsapp } from 'react-icons/fa';
 
-// Core components — always needed, not lazy
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import ScrollToTop from "./components/ScrollToTop";
-import LeadPopup from './components/LeadPopup';
-import AdminProtectedRoute from "./components/AdminProtectedRoute";
-import AuthHandler from "./components/AuthHandler";
-import CookieConsent from "./components/CookieConsent";
-import SessionGuard from "./components/SessionGuard";
+// Core components — always loaded (small, needed on every page)
+import Navbar              from './components/Navbar';
+import Footer              from './components/Footer';
+import ScrollToTop         from './components/ScrollToTop';
+import LeadPopup           from './components/LeadPopup';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
+import AuthHandler         from './components/AuthHandler';
+import CookieConsent       from './components/CookieConsent';
+import SessionGuard        from './components/SessionGuard';
 
-// Home is eager — it's the landing page, must be instant
+// Home is eager — landing page must be instant
 import Home from './pages/Home';
 
-// Everything else is lazy — each becomes its own JS chunk
+// ── Lazy-loaded pages ────────────────────────────────────────────
 const About              = lazy(() => import('./pages/About'));
 const Courses            = lazy(() => import('./pages/Courses'));
 const CourseDetail       = lazy(() => import('./pages/CourseDetail'));
@@ -61,7 +58,7 @@ const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
 const PrivacyPolicy      = lazy(() => import('./pages/PrivacyPolicy'));
 const CookiePolicy       = lazy(() => import('./pages/CookiePolicy'));
 
-// Minimal page-transition spinner shown while a chunk loads
+// ── Loading spinner shown while a chunk loads ────────────────────
 const PageLoader = () => (
   <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <div className="spinner-border text-primary" role="status">
@@ -70,14 +67,14 @@ const PageLoader = () => (
   </div>
 );
 
+// ── App ──────────────────────────────────────────────────────────
 function App() {
   const location     = useLocation();
-  const isAdminRoute = location.pathname.startsWith("/admin");
-  const isLmsRoute   = location.pathname.startsWith("/lms");
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isLmsRoute   = location.pathname.startsWith('/lms');
 
-  // Routes where Navbar / Footer / LeadPopup should be hidden
-  const noLeadPopup = ["/contact", "/login", "/registration", "/course_registration"];
-  const noFooter    = ["/login", "/registration"];
+  const noLeadPopup = ['/contact', '/login', '/registration', '/course_registration'];
+  const noFooter    = ['/login', '/registration'];
 
   const shouldHideLeadPopup = isAdminRoute || isLmsRoute || noLeadPopup.includes(location.pathname);
   const shouldHideNavbar    = isAdminRoute || isLmsRoute;
@@ -94,61 +91,59 @@ function App() {
         {!shouldHideLeadPopup && <LeadPopup />}
         {!shouldHideNavbar    && <Navbar />}
 
-        {/* public-layout adds padding-top to clear the fixed Navbar.
-            Admin, LMS, auth pages manage their own spacing. */}
         <div className={!shouldHideNavbar ? 'public-layout' : ''}>
           <Suspense fallback={<PageLoader />}>
-          <Routes>
+            <Routes>
 
-            {/* ── Public ── */}
-            <Route path="/"                          element={<Home />} />
-            <Route path="/about"                     element={<About />} />
-            <Route path="/courses"                   element={<Courses />} />
-            <Route path="/course/:id"                element={<CourseDetail />} />
-            <Route path="/study-abroad"              element={<StudyAbroad />} />
-            <Route path="/study-abroad/:countryName" element={<CountryDetail />} />
-            <Route path="/visit-visa"                element={<VisitVisa />} />
-            <Route path="/blogs"                     element={<Blogs />} />
-            <Route path="/blog/:slug"                element={<BlogDetail />} />
-            <Route path="/contact"                   element={<Contact />} />
+              {/* ── Public ── */}
+              <Route path="/"                          element={<Home />} />
+              <Route path="/about"                     element={<About />} />
+              <Route path="/courses"                   element={<Courses />} />
+              <Route path="/course/:id"                element={<CourseDetail />} />
+              <Route path="/study-abroad"              element={<StudyAbroad />} />
+              <Route path="/study-abroad/:countryName" element={<CountryDetail />} />
+              <Route path="/visit-visa"                element={<VisitVisa />} />
+              <Route path="/blogs"                     element={<Blogs />} />
+              <Route path="/blog/:slug"                element={<BlogDetail />} />
+              <Route path="/contact"                   element={<Contact />} />
 
-            {/* ── Auth ── */}
-            <Route path="/login"                     element={<Login />} />
-            <Route path="/registration"              element={<Registration />} />
-            <Route path="/auth/callback"             element={<AuthCallback />} />
+              {/* ── Auth ── */}
+              <Route path="/login"                     element={<Login />} />
+              <Route path="/registration"              element={<Registration />} />
+              <Route path="/auth/callback"             element={<AuthCallback />} />
 
-            {/* ── User ── */}
-            <Route path="/course_registration"       element={<CourseRegistration />} />
-            <Route path="/account"                   element={<Account />} />
+              {/* ── User ── */}
+              <Route path="/course_registration"       element={<CourseRegistration />} />
+              <Route path="/account"                   element={<Account />} />
 
-            {/* ── LMS (own sidebar, no global Navbar/Footer) ── */}
-            <Route path="/lms"                       element={<LMSDashboard />} />
-            <Route path="/lms/courses"               element={<LMSCourses />} />
-            <Route path="/lms/course/:id"            element={<LMSCourseViewer />} />
-            <Route path="/lms/certificates"          element={<LMSCertificates />} />
-            <Route path="/lms/notifications"         element={<LMSNotifications />} />
-            <Route path="/lms/exams"                 element={<LMSExams />} />
-            <Route path="/lms/settings"              element={<LMSSettings />} />
-            <Route path="/lms/profile"               element={<LMSProfile />} />
+              {/* ── LMS ── */}
+              <Route path="/lms"                       element={<LMSDashboard />} />
+              <Route path="/lms/courses"               element={<LMSCourses />} />
+              <Route path="/lms/course/:id"            element={<LMSCourseViewer />} />
+              <Route path="/lms/certificates"          element={<LMSCertificates />} />
+              <Route path="/lms/notifications"         element={<LMSNotifications />} />
+              <Route path="/lms/exams"                 element={<LMSExams />} />
+              <Route path="/lms/settings"              element={<LMSSettings />} />
+              <Route path="/lms/profile"               element={<LMSProfile />} />
 
-            {/* ── Legal ── */}
-            <Route path="/terms-and-conditions"      element={<TermsAndConditions />} />
-            <Route path="/privacy-policy"            element={<PrivacyPolicy />} />
-            <Route path="/cookie-policy"             element={<CookiePolicy />} />
+              {/* ── Legal ── */}
+              <Route path="/terms-and-conditions"      element={<TermsAndConditions />} />
+              <Route path="/privacy-policy"            element={<PrivacyPolicy />} />
+              <Route path="/cookie-policy"             element={<CookiePolicy />} />
 
-            {/* ── Admin public ── */}
-            <Route path="/admin/login"               element={<AdminLogin />} />
-            <Route path="/admin/signup"              element={<AdminSignup />} />
+              {/* ── Admin public ── */}
+              <Route path="/admin/login"               element={<AdminLogin />} />
+              <Route path="/admin/signup"              element={<AdminSignup />} />
 
-            {/* ── Admin protected — ALL admin pages require admin role ── */}
-            <Route path="/admin/dashboard"     element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-            <Route path="/admin/courses"        element={<AdminProtectedRoute><AdminCourses /></AdminProtectedRoute>} />
-            <Route path="/admin/courses/:id"   element={<AdminProtectedRoute><AdminCourseEditor /></AdminProtectedRoute>} />
-            <Route path="/admin/blogs"         element={<AdminProtectedRoute><AdminBlogs /></AdminProtectedRoute>} />
-            <Route path="/admin/leads"         element={<AdminProtectedRoute><AdminLeads /></AdminProtectedRoute>} />
-            <Route path="/admin/registrations" element={<AdminProtectedRoute><AdminRegistrations /></AdminProtectedRoute>} />
+              {/* ── Admin protected ── */}
+              <Route path="/admin/dashboard"     element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+              <Route path="/admin/courses"       element={<AdminProtectedRoute><AdminCourses /></AdminProtectedRoute>} />
+              <Route path="/admin/courses/:id"   element={<AdminProtectedRoute><AdminCourseEditor /></AdminProtectedRoute>} />
+              <Route path="/admin/blogs"         element={<AdminProtectedRoute><AdminBlogs /></AdminProtectedRoute>} />
+              <Route path="/admin/leads"         element={<AdminProtectedRoute><AdminLeads /></AdminProtectedRoute>} />
+              <Route path="/admin/registrations" element={<AdminProtectedRoute><AdminRegistrations /></AdminProtectedRoute>} />
 
-          </Routes>
+            </Routes>
           </Suspense>
         </div>
 
@@ -165,7 +160,7 @@ function App() {
 
         {!shouldHideNavbar && (
           <a
-            href="https://wa.me/8977011804"
+            href="https://wa.me/918977011804"
             target="_blank"
             rel="noopener noreferrer"
             className="whatsapp-float"
