@@ -21,7 +21,7 @@ A modern, production-ready educational services website built with React, Node.j
 
 ### Deployment
 - Frontend: Vercel
-- Backend: Render/Railway
+- Backend: Vercel
 - Database: Supabase
 
 ## Features
