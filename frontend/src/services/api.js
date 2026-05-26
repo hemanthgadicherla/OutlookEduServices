@@ -254,24 +254,20 @@ export const registrationAPI = {
   },
 
   // GET
-  getRegistrations: async () => {
-
-    const response =
-      await fetch(
-
-        `${API_BASE_URL}/registrations`,
-
-        {
-
-          headers:
-            getHeaders()
-
-        }
-
-      );
-
+  getRegistrations: async (page = 1, limit = 20, all = false, search = '', status = 'all') => {
+    let params;
+    if (all) {
+      params = '?all=true';
+    } else {
+      const qs = new URLSearchParams({ page, limit });
+      if (search && search.trim())          qs.set('search', search.trim());
+      if (status && status !== 'all')       qs.set('status', status);
+      params = `?${qs.toString()}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/registrations${params}`, {
+      headers: getHeaders()
+    });
     return await response.json();
-
   },
 
 

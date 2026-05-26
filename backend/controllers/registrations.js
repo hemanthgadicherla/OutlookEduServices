@@ -138,79 +138,67 @@ const createRegistration = async (
 
 
 // GET REGISTRATIONS
-const getRegistrations = async (
-  req,
-  res
-) => {
-
+const getRegistrations = async (req, res) => {
   try {
+    const page   = parseInt(req.query.page)  || 1;
+    const limit  = parseInt(req.query.limit) || 20;
+    const all    = req.query.all === 'true';
+    const search = (req.query.search || '').trim();
+    const status = req.query.status || '';   // 'paid' | 'pending' | 'failed' | ''
 
-    // Pagination
-    const page =
-      parseInt(req.query.page) || 1;
+    // Build base query with optional filters
+    const applyFilters = (q) => {
+      if (status && ['paid', 'pending', 'failed'].includes(status)) {
+        q = q.eq('payment_status', status);
+      }
+      if (search) {
+        // Supabase ilike OR across multiple columns
+        q = q.or(
+          `student_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,selected_course.ilike.%${search}%`
+        );
+      }
+      return q;
+    };
 
-    const limit = 10;
-
-    const from =
-      (page - 1) * limit;
-
-    const to =
-      from + limit - 1;
-
-
-    const {
-      data,
-      error
-    } = await supabase
-
+    // Count with filters applied
+    let countQuery = supabase
       .from('registrations')
+      .select('*', { count: 'exact', head: true });
+    countQuery = applyFilters(countQuery);
 
+    const { count, error: countError } = await countQuery;
+    if (countError) throw countError;
+
+    const total = count || 0;
+
+    // Fetch data — all rows or paginated
+    let query = supabase
+      .from('registrations')
       .select('*')
+      .order('created_at', { ascending: false });
+    query = applyFilters(query);
 
-      .range(from, to)
-
-      .order('created_at', {
-        ascending: false
-      });
-
-
-    if (error) {
-
-      throw error;
-
+    if (!all) {
+      const from = (page - 1) * limit;
+      const to   = from + limit - 1;
+      query = query.range(from, to);
     }
 
+    const { data, error } = await query;
+    if (error) throw error;
 
-    res.json({
-
-      success: true,
-
+    return res.json({
+      success:     true,
+      data:        data || [],
+      total,
       currentPage: page,
-
-      data
-
+      totalPages:  all ? 1 : Math.ceil(total / limit) || 1,
+      limit
     });
-
+  } catch (error) {
+    console.error('Get registrations error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch registrations' });
   }
-
-  catch (error) {
-
-    console.error(
-      'Get registrations error:',
-      error
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message:
-        'Failed to fetch registrations'
-
-    });
-
-  }
-
 };
 
 
