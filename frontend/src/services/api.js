@@ -672,6 +672,22 @@ export const lmsAPI = {
     });
     return await response.json();
   },
+  // Get signed stream URL for a lesson (Bunny CDN or plain URL)
+  getStreamUrl: async (lessonId) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/lesson/${lessonId}/stream`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
+  // Get last-touched lesson for "Continue Learning"
+  getResume: async () => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/lms/resume`, {
+      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }
+    });
+    return await response.json();
+  },
   getLessonVideoUrl: async (lessonId) => {
     const token = localStorage.getItem('userToken');
     const response = await fetch(`${API_BASE_URL}/lms/lesson/${lessonId}/video-url`, {

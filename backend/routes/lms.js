@@ -1,5 +1,5 @@
-const express    = require('express');
-const router     = express.Router();
+const express = require('express');
+const router  = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
 const {
   getUserCourses,
@@ -10,23 +10,22 @@ const {
   generateCertificate,
   getNotifications,
   markNotificationRead,
-  getCourseSuggestions,
+  getStreamUrl,
   getResume,
-  getLessonVideoUrl
 } = require('../controllers/lms');
 
-router.use(verifyToken); // all LMS routes require auth
+// All LMS routes require a valid user token
+router.use(verifyToken);
 
-router.get('/resume',                   getResume);
 router.get('/courses',                  getUserCourses);
 router.get('/course/:id',               getCourseContent);
 router.post('/progress',                updateProgress);
 router.get('/stats',                    getStats);
 router.get('/certificates',             getCertificates);
 router.post('/certificate/generate',    generateCertificate);
-router.get('/lesson/:id/video-url',     getLessonVideoUrl);
-router.get('/course/:id/suggestions',   getCourseSuggestions);
 router.get('/notifications',            getNotifications);
 router.patch('/notifications/:id/read', markNotificationRead);
+router.get('/lesson/:id/stream',        getStreamUrl);   // Bunny signed URL
+router.get('/resume',                   getResume);      // Continue learning
 
 module.exports = router;
