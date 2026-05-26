@@ -208,22 +208,26 @@ const getBunnyUploadToken = async (req, res) => {
       .from('course_lessons').select('id, title').eq('id', id).maybeSingle();
     if (!lesson) return res.status(404).json({ success: false, message: 'Lesson not found' });
 
-    // Create the video object in Bunny Stream (gets a stable videoId / guid)
-    const video = await createBunnyVideo(videoTitle || lesson.title, videoDescription || '');
+    // Create the video object in Bunny Stream
+    const video   = await createBunnyVideo(videoTitle || lesson.title, videoDescription || '');
     const videoId = video.guid;
 
-    // Generate time-limited TUS signature (no raw API key sent to client)
+    // Generate TUS credentials (no raw API key sent to client)
     const creds = getBunnyTusCredentials(videoId);
 
-    // Record the Bunny video ID in DB immediately so it's tracked
+    // Record the Bunny video ID in DB immediately
     await supabase.from('course_lessons')
       .update({ video_url: `bunny:${videoId}` })
       .eq('id', id);
 
     return res.json({ success: true, data: creds });
   } catch (err) {
-    console.error('getBunnyUploadToken error:', err);
-    return res.status(500).json({ success: false, message: err.message || 'Failed to create Bunny video' });
+    console.error('getBunnyUploadToken error:', err.message);
+    // Return the actual error message so the frontend can show it
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'Failed to create Bunny video'
+    });
   }
 };
 

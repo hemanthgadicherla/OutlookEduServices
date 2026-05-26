@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import * as tus from 'tus-js-client';
 import AdminSidebar from '../components/AdminSidebar';
 import { courseAPI, uploadAPI, curriculumAPI } from '../services/api';
 import { toast } from 'react-toastify';
@@ -59,8 +58,19 @@ const VideoUploadModal = ({ lesson, onClose, onDone }) => {
       });
       if (!res.success) { toast.error(res.message || 'Failed to get upload credentials'); setUploading(false); return; }
       const { videoId, libraryId, signature, expires } = res.data;
+
+      // Load tus-js-client from CDN dynamically — no npm install needed
+      if (!window.tus) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/tus-js-client@latest/dist/tus.min.js';
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+
       await new Promise((resolve, reject) => {
-        const upload = new tus.Upload(file, {
+        const upload = new window.tus.Upload(file, {
           endpoint:    'https://video.bunnycdn.com/tusupload',
           retryDelays: [0, 3000, 5000, 10000],
           headers: {
