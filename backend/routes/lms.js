@@ -12,6 +12,8 @@ const {
   markNotificationRead,
   getStreamUrl,
   getResume,
+  getLessonVideoUrl,
+  getCourseSuggestions,
 } = require('../controllers/lms');
 
 // All LMS routes require a valid user token
@@ -25,7 +27,9 @@ router.get('/certificates',             getCertificates);
 router.post('/certificate/generate',    generateCertificate);
 router.get('/notifications',            getNotifications);
 router.patch('/notifications/:id/read', markNotificationRead);
-router.get('/lesson/:id/stream',        getStreamUrl);   // Bunny signed URL
-router.get('/resume',                   getResume);      // Continue learning
+router.get('/lesson/:id/stream',        getStreamUrl);
+router.get('/lesson/:id/video-url',     getLessonVideoUrl);
+router.get('/course/:id/suggestions',   getCourseSuggestions);
+router.get('/resume',                   getResume);
 
 module.exports = router;

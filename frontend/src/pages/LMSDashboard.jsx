@@ -150,7 +150,7 @@ const CourseCard = ({ item, delay }) => {
         <span className="badge position-absolute" style={{ top: 10, right: 10, background: `${statusColor}22`, color: statusColor, fontSize: 10, border: `1px solid ${statusColor}44` }}>
           {statusLabel}
         </span>
-        <div style={{ position: 'absolute', bottom: 10, right: 10, position: 'absolute' }}>
+        <div style={{ position: 'absolute', bottom: 10, right: 10 }}>
           <div style={{ position: 'relative', width: 40, height: 40 }}>
             <Ring pct={pct} size={40} stroke={4} color={statusColor} />
             <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff' }}>{pct}%</span>
