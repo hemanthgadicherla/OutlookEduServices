@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Link, useParams } from "react-router-dom";
 import {
@@ -361,35 +360,31 @@ const About = () => {
 
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards — all data from studyAbroad.js */}
 
           <div className="row">
 
             {[
               {
                 icon: <FaUniversity />,
-                number: "50+",
-                text: "Universities & Colleges",
+                number: country.universitiesCount,
+                text: (country.statsLabels && country.statsLabels[0]) || "Universities & Colleges",
               },
-
               {
                 icon: <FaGraduationCap />,
-                number: "250+",
-                text: "International Students",
+                number: country.students,
+                text: (country.statsLabels && country.statsLabels[1]) || "International Students",
               },
-
               {
                 icon: <FaBookOpen />,
-                number: "20+",
-                text: "Study Programs",
+                number: country.programs,
+                text: (country.statsLabels && country.statsLabels[2]) || "Study Programs",
               },
-
               {
                 icon: <FaCheckCircle />,
-                number: "93%",
-                text: "Employment Rate",
+                number: country.employment,
+                text: (country.statsLabels && country.statsLabels[3]) || "Employment Rate",
               },
-
             ].map((item, index) => (
 
               <div
@@ -609,40 +604,28 @@ const About = () => {
 
           </div>
 
-          {/* Reason Cards */}
+          {/* Reason Cards — data from studyAbroad.js */}
 
           <div className="row">
 
-            {[
+            {(country.reasons || [
               {
-                icon: <FaGraduationCap />,
                 title: "World-Class Education",
-                description:
-                  "High-ranking universities and cutting-edge academic excellence.",
+                description: "High-ranking universities and cutting-edge academic excellence.",
               },
-
               {
-                icon: <FaUniversity />,
                 title: "Innovation & Research",
-                description:
-                  "Access to pioneering research labs and industry partnerships.",
+                description: "Access to pioneering research labs and industry partnerships.",
               },
-
               {
-                icon: <FaCheckCircle />,
                 title: "Career Prospects",
-                description:
-                  "Strong job market and global corporate opportunities for graduates.",
+                description: "Strong job market and global corporate opportunities for graduates.",
               },
-
               {
-                icon: <FaGlobe />,
                 title: "Cultural Diversity",
-                description:
-                  "Experience vibrant international student communities and lifestyles.",
+                description: "Experience vibrant international student communities and lifestyles.",
               },
-
-            ].map((item, index) => (
+            ]).map((item, index) => (
 
               <div
                 key={index}
@@ -749,7 +732,7 @@ const About = () => {
 
                     }}
                   >
-                    {item.icon}
+                    {[<FaGraduationCap />, <FaUniversity />, <FaCheckCircle />, <FaGlobe />][index % 4]}
                   </motion.div>
 
                   {/* Title */}
